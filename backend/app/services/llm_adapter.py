@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 import anthropic as _anthropic
 import httpx2
-from openai import APITimeoutError, AsyncOpenAI
+from openai import APIConnectionError, APIStatusError, APITimeoutError, AsyncOpenAI, RateLimitError
 from pydantic import BaseModel
 
 from app.core.app_logger import get_logger
@@ -97,6 +97,7 @@ class LLMToolCall:
     name: str
     arguments: dict
     raw_arguments: str
+    extra_content: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -137,14 +138,14 @@ async def _safe_stream_events(stream: object, provider: str) -> AsyncGenerator:
         _anthropic.APITimeoutError,
     ) as exc:
         raise LLMTimeoutError(f"{provider} timed out while streaming") from exc
-    except (_anthropic.APIConnectionError, httpx2.NetworkError) as exc:
+    except (APIConnectionError, _anthropic.APIConnectionError, httpx2.NetworkError) as exc:
         raise LLMUnavailableError(f"{provider} is unreachable") from exc
-    except _anthropic.RateLimitError as exc:
+    except (RateLimitError, _anthropic.RateLimitError) as exc:
         raise LLMUnavailableError(f"{provider} rate limit exceeded") from exc
-    except _anthropic.APIStatusError as exc:
+    except (APIStatusError, _anthropic.APIStatusError) as exc:
         if _is_tools_unsupported_error(exc):
             raise LLMToolsUnsupportedError(f"{provider} does not support tools") from exc
-        raise LLMError(f"{provider} streaming error: {exc}") from exc
+        raise LLMError(f"{provider} streaming request failed") from exc
     except Exception as exc:
         if _is_tools_unsupported_error(exc):
             raise LLMToolsUnsupportedError(f"{provider} does not support tools") from exc
@@ -221,6 +222,34 @@ def _check_openai_response(response: object) -> None:
     if _is_tools_unsupported_error(RuntimeError(message)):
         raise LLMToolsUnsupportedError("openai does not support tools")
     raise LLMError(f"OpenAI response failed: {message}")
+
+
+class GeminiCompletionStream:
+    """Validate Gemini completion streams without replaying partial answers."""
+
+    def __init__(self, stream: object) -> None:
+        self._stream = stream
+
+    def __aiter__(self):
+        return self._iterate()
+
+    async def _iterate(self):
+        completed = False
+        has_output = False
+        try:
+            async for chunk in _safe_stream_events(self._stream, "gemini"):
+                for choice in chunk.choices:
+                    delta = choice.delta
+                    has_output = has_output or bool(delta.content or delta.tool_calls)
+                    if choice.finish_reason is not None:
+                        if choice.finish_reason not in ("stop", "tool_calls"):
+                            raise LLMResponseError("Gemini returned an incomplete response")
+                        completed = True
+                yield chunk
+            if not completed or not has_output:
+                raise LLMResponseError("Gemini returned an empty or incomplete stream")
+        finally:
+            await self._stream.close()
 
 
 class OpenAIResponsesStream(LLMStream):
@@ -359,7 +388,7 @@ class LLMToolStream(LLMStream):
                     )
             return
 
-        calls: dict[int, dict[str, str]] = {}
+        calls: dict[int, dict] = {}
         prompt_tokens: int | None = None
         completion_tokens: int | None = None
 
@@ -411,9 +440,7 @@ class LLMToolStream(LLMStream):
                 if text:
                     yield text
                 if not collect_calls:
-                    if self._adapter.provider == "bedrock" and getattr(
-                        delta, "tool_calls", None
-                    ):
+                    if self._adapter.provider == "bedrock" and getattr(delta, "tool_calls", None):
                         raise LLMResponseError("Bedrock requested an additional tool round")
                     continue
                 tool_deltas = getattr(delta, "tool_calls", None)
@@ -435,6 +462,9 @@ class LLMToolStream(LLMStream):
                         call["name"] += str(name)
                     if arguments:
                         call["arguments"] += str(arguments)
+                    extra_content = getattr(tool_delta, "extra_content", None)
+                    if isinstance(extra_content, dict):
+                        call.setdefault("extra_content", {}).update(extra_content)
         finally:
             self._add_usage(prompt_tokens, completion_tokens)
 
@@ -452,6 +482,7 @@ class LLMToolStream(LLMStream):
                         name=raw_call["name"],
                         arguments=arguments,
                         raw_arguments=raw_call["arguments"],
+                        extra_content=raw_call.get("extra_content"),
                     )
                 )
 
@@ -641,6 +672,13 @@ class LLMAdapter:
         elif self.provider == "openai":
             self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
             self.model = settings.OPENAI_MODEL
+        elif self.provider == "gemini":
+            self.client = AsyncOpenAI(
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                api_key=settings.GEMINI_API_KEY or "not-configured",
+                max_retries=0,
+            )
+            self.model = settings.GEMINI_MODEL
         elif self.provider == "deepseek":
             self.client = AsyncOpenAI(
                 base_url="https://api.deepseek.com/v1",
@@ -797,7 +835,12 @@ class LLMAdapter:
                 sdk_max_retries=sdk_max_retries,
             )
 
-        # For Ollama and DeepSeek (OpenAI-compatible Chat Completions):
+        if self.provider == "gemini" and (
+            not settings.GEMINI_API_KEY.strip() or not self.model.strip()
+        ):
+            raise LLMUnavailableError("Gemini requires GEMINI_API_KEY and GEMINI_MODEL")
+
+        # OpenAI-compatible Chat Completions (Ollama, DeepSeek and Gemini):
         # pass stream_options so the final chunk includes token usage.
         # Defensively build kwargs to stay compatible with older SDK versions.
         extra: dict = {}
@@ -818,16 +861,31 @@ class LLMAdapter:
         client = self.client
         if sdk_max_retries is not None:
             client = client.with_options(max_retries=sdk_max_retries)
-        response = await client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            stream=stream,
-            timeout=request_timeout,
-            **extra,
-        )
+        try:
+            response = await client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                stream=stream,
+                timeout=request_timeout,
+                **extra,
+            )
+        except APITimeoutError as exc:
+            raise LLMTimeoutError(f"{self.provider} request timed out") from exc
+        except (APIConnectionError, RateLimitError) as exc:
+            raise LLMUnavailableError(f"{self.provider} unavailable or rate limited") from exc
+        except APIStatusError as exc:
+            if _is_tools_unsupported_error(exc):
+                raise LLMToolsUnsupportedError(f"{self.provider} does not support tools") from exc
+            raise LLMError(f"{self.provider} request failed (HTTP {exc.status_code})") from exc
         if stream:
+            if self.provider == "gemini":
+                return GeminiCompletionStream(response)
             return response
 
+        if self.provider == "gemini" and (
+            not response.choices or response.choices[0].finish_reason != "stop"
+        ):
+            raise LLMResponseError("Gemini returned an incomplete response")
         content = response.choices[0].message.content
         if not content:
             raise LLMResponseError("LLM returned empty response")
@@ -1021,6 +1079,7 @@ class LLMAdapter:
                     "name": call.name,
                     "arguments": call.raw_arguments or json.dumps(call.arguments),
                 },
+                **({"extra_content": call.extra_content} if call.extra_content else {}),
             }
             for call in calls
         ]

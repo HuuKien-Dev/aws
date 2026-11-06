@@ -309,8 +309,12 @@ async def generate_flashcards_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     plan = await _get_active_plan_or_404(db, current_user.id)
-    if settings.LLM_PROVIDER == "bedrock" and (
-        not settings.AWS_REGION or not settings.BEDROCK_MODEL_ID
+    if (
+        settings.LLM_PROVIDER == "bedrock"
+        and (not settings.AWS_REGION or not settings.BEDROCK_MODEL_ID)
+    ) or (
+        settings.LLM_PROVIDER == "gemini"
+        and (not settings.GEMINI_API_KEY.strip() or not settings.GEMINI_MODEL.strip())
     ):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

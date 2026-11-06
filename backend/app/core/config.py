@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     FIRST_USER_IS_ADMIN: bool = True
     BLOCKED_EMAIL_DOMAINS: list[str] = []
     LLM_PROVIDER: str = "ollama"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = ""
     AWS_REGION: str = ""
     BEDROCK_MODEL_ID: str = ""
     BEDROCK_MAX_TOKENS: int = Field(default=8192, ge=1)
