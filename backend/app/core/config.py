@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     FIRST_USER_IS_ADMIN: bool = True
     BLOCKED_EMAIL_DOMAINS: list[str] = []
     LLM_PROVIDER: str = "ollama"
+    AWS_REGION: str = ""
+    BEDROCK_MODEL_ID: str = ""
+    BEDROCK_MAX_TOKENS: int = Field(default=8192, ge=1)
+    BEDROCK_TIMEOUT_SECONDS: int = Field(default=120, ge=1, le=600)
+    BEDROCK_KNOWLEDGE_BASE_ID: str = ""
+    BEDROCK_RAG_RESULTS: int = Field(default=5, ge=1, le=20)
+    BEDROCK_RAG_MIN_SCORE: float = Field(default=0.5, ge=0, le=1)
+    CUSTOM_SOURCE_URL: str = ""
     OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
     OLLAMA_MODEL: str = "gemma4:e4b"
     EXERCISE_GENERATION_TIMEOUT_SECONDS: int = Field(default=600, ge=1)
@@ -27,13 +35,13 @@ class Settings(BaseSettings):
     ANTHROPIC_MAX_TOKENS: int = 8192
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_MODEL: str = "deepseek-chat"
-    TTS_PROVIDER: str = "local"  # local | openai
+    TTS_PROVIDER: Literal["local", "openai", "disabled"] = "local"
     TTS_BASE_URL: str = "http://kokoro:8880"
     TTS_VOICE: str = "af_heart"
     OPENAI_TTS_MODEL: str = "tts-1"
     OPENAI_TTS_VOICE: str = "nova"
     OPENAI_TTS_SPEED: float = 1.0
-    STT_PROVIDER: str = "local"  # local | openai
+    STT_PROVIDER: Literal["local", "openai", "disabled"] = "local"
     STT_BASE_URL: str = "http://whisper:9000"
     OPENAI_STT_MODEL: str = "whisper-1"
     RATE_LIMIT_ENABLED: bool = True

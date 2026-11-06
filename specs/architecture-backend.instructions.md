@@ -121,10 +121,20 @@ helper owns parsing and spoken boundaries. Original chat content remains in stor
 provider adapters continue receiving ordinary text. Direct and transitive parser dependencies are
 pinned in `requirements.txt` and `constraints.txt`.
 
-The LLM adapter uses Responses for OpenAI, Chat Completions for Ollama/DeepSeek, and Anthropic's native
+The LLM adapter uses Converse/ConverseStream for Bedrock, Responses for OpenAI, Chat Completions for Ollama/DeepSeek, and Anthropic's native
 API. OpenAI requests use `store=false`; each tool stream owns its native output and replays it only
 into its own continuation. Provider response IDs, reasoning items, and tool payloads are not shared
 through the singleton adapter or added to the persisted conversation transcript.
+
+Bedrock SDK transport lives in `services/bedrock_service.py`; blocking SDK work runs in worker
+threads. Configuration uses `AWS_REGION`, `BEDROCK_MODEL_ID`, output/timeout bounds and optional
+Knowledge Base settings. Credentials use the standard SDK chain and never enter frontend code.
+`rag_service.py` retrieves shared curriculum for chat and lesson generation, then delegates inference
+to the same adapter. It preserves CEFR/plan ownership, memory tools, streaming and Pydantic validation.
+Sources are actual retrieved locations; retrieved instructions cannot replace system policy. No AWS
+provisioning, document upload, embedding process, vector database or schema migration runs locally.
+Disabled speech registers `None` service objects; callers expose unavailable behavior rather than
+substituting Bedrock for TTS/STT.
 
 Listening and Reading retain FastAPI background tasks with independent database/Redis resources.
 `exercise_generation.py` owns their renewable Redis leases, total generation deadline, cancellation,
@@ -203,3 +213,19 @@ specifications.
 - `api-endpoints.instructions.md`: transport contracts.
 - `docker.instructions.md`: container runtime and environment propagation.
 - Domain specs: detailed learning, language, speech, access, and community behavior.
+
+## Bedrock API-key authentication
+
+Model inference also accepts `AWS_BEARER_TOKEN_BEDROCK` through the AWS SDK's native environment
+support. Compose forwards the optional token only to the backend; it is not a frontend setting,
+public-config field or model ID. The SDK selects bearer-token inference for a nonempty value;
+an empty value retains the standard IAM Role/SSO/profile chain. No additional SDK dependency,
+manual Authorization header or global environment mutation is required. The key must be valid,
+unexpired, authorized for the model and scoped to the configured region. Tokens are replaced
+outside the application and are never logged or returned. Provider authentication failures stay
+sanitized and do not silently switch authentication modes.
+
+Bedrock API keys do not authorize Knowledge Base `Retrieve`. Its `bedrock-agent-runtime` client
+explicitly uses SigV4 and still needs IAM credentials with `bedrock:Retrieve`. Inference can use a
+key alongside separate IAM credentials for retrieval. An inference-only configuration leaves the
+KB ID empty. TTS and STT remain independently configured.

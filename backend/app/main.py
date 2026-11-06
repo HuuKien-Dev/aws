@@ -91,8 +91,10 @@ async def lifespan(app: FastAPI):  # noqa: ANN201
             voice=settings.OPENAI_TTS_VOICE,
             speed=settings.OPENAI_TTS_SPEED,
         )
-    else:
+    elif settings.TTS_PROVIDER == "local":
         app.state.tts_service = KokoroTTSService(settings.TTS_BASE_URL, settings.TTS_VOICE)
+    else:
+        app.state.tts_service = None
 
     if settings.STT_PROVIDER == "openai":
         if not settings.OPENAI_API_KEY:
@@ -101,8 +103,10 @@ async def lifespan(app: FastAPI):  # noqa: ANN201
             api_key=settings.OPENAI_API_KEY,
             model=settings.OPENAI_STT_MODEL,
         )
-    else:
+    elif settings.STT_PROVIDER == "local":
         app.state.stt_service = WhisperSTTService(settings.STT_BASE_URL)
+    else:
+        app.state.stt_service = None
 
     yield
 

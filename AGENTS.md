@@ -6,7 +6,7 @@
 
 - Monorepo: `backend/` (Python 3.14, FastAPI) and `frontend/` (Next.js 16 App Router), with PostgreSQL 16 and Redis 7.
 - The backend owns business logic and proxies every external service; the frontend must not call LLM, TTS, or STT providers directly.
-- The AI tutor persona is Lingu.
+- The AI tutor persona is Ligo.
 - Specifications describe current behavior. Release history belongs only in `CHANGELOG.md`.
 
 ## Non-negotiable invariants
@@ -18,7 +18,8 @@
 - Resource-owned STT requires a user-owned study plan and always sends an explicit recognition language.
 - Access authorization is enforced by the backend. Frontend flags and route guards are presentation/navigation aids only.
 - The backend auth design, refresh-token rotation, and storage rules in `specs/platform.instructions.md` must not be weakened.
-- TTS and STT are required platform services; provider contracts live in `specs/speech-services.instructions.md`.
+- TTS and STT are required for speech features; the web may run with either provider explicitly
+  `disabled`. Bedrock chat does not replace speech. Contracts live in `specs/speech-services.instructions.md`.
 
 ## Visual conventions
 
@@ -74,11 +75,19 @@ Use the narrowest relevant spec first:
 
 ## Development environment
 
-- Docker is unavailable locally and the application is not deployed on this machine. Do not suggest local Docker commands or runtime checks.
-- Local validation is limited to backend tests/static checks and frontend lint/typecheck/unit tests. Deployment checks belong to the maintainer.
+- Docker build/start operations require an explicit maintainer request and may need access outside
+  the sandbox. Preserve existing data mounts, `.env` and volumes. Ubuntu/VMware commands live in
+  `DEVELOPMENT.md`; use `docker-compose.dev.yml` to build this modified source, with speech disabled
+  for CPU-only hosts. Do not publish images or deploy remotely without authorization.
+- Local validation normally uses backend tests/static checks and frontend lint/typecheck/unit tests.
+  Container builds and localhost checks may run when explicitly requested; cloud deployment checks
+  remain the maintainer's responsibility.
 - Local runtimes, dependencies and caches must stay inside the repository. Use `./scripts/bootstrap.sh` to install the exact toolchain from `scripts/toolchain.env`, and `./scripts/local.sh {root|backend|frontend} command` for commands. Do not use global Python/Node/npm, Homebrew installations, or bare `npx` for project work.
 - `.local/`, `.venv/` and `frontend/node_modules/` are generated and Git-ignored. Bootstrap reconstructs them; `--recreate` replaces an existing `.venv`. Python development tools and their indirect dependencies are pinned in `backend/requirements-dev.txt` and `backend/constraints-dev.txt`. Dependency installation belongs to bootstrap, not validation scripts.
 - Use the `run-tests` skill for requested targeted validation and the `pre-push` skill for final full validation.
+- If those skills are unavailable, the maintainer-authorized fallback is the existing
+  `scripts/local.sh`, `scripts/format.sh` and `scripts/pre-push.sh` workflow. This does not waive the
+  approval rules for validation, dependency changes or Markdown edits.
 - Ask before running tests, builds, linters, typechecks, formatters, or other validation. Do not launch full suites automatically.
 - If a test fails, stop, report the failure, and ask before changing code or tests.
 - Backend CI and images use Python 3.14.9 and pip 26.2.2. Keep `requirements.txt`, `constraints.txt`, Docker, CI, and cache inputs aligned.

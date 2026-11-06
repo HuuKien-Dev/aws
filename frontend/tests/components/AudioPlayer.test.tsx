@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import React from 'react'
 import { AudioPlayer } from '@/components/ui/AudioPlayer'
 import { useAuthStore } from '@/store/auth'
+import { useConfigStore } from '@/store/config'
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -44,6 +45,7 @@ describe('AudioPlayer', () => {
   let urlCounter: number
 
   beforeEach(() => {
+    useConfigStore.setState({ ttsEnabled: true })
     urlCounter = 0
     revokeCalls = []
     currentAudioMock = makeAudioMock()
@@ -89,6 +91,13 @@ describe('AudioPlayer', () => {
     }
 
     useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it('disables synthesis without TTS and explains the unavailable service', () => {
+    useConfigStore.setState({ ttsEnabled: false })
+    render(<AudioPlayer text="Hello" />)
+    expect(screen.getByRole('button')).toBeDisabled()
+    expect(screen.getByRole('button')).toHaveAttribute('title', 'speechUnavailable')
   })
 
   afterEach(() => {

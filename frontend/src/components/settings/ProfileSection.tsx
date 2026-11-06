@@ -9,23 +9,7 @@ import { useAuthStore } from '@/store/auth'
 import { SUPPORTED_LOCALES } from '@/lib/locales'
 import { AuthAvatarImage } from '@/components/AuthAvatarImage'
 
-const LANGUAGES = [
-  'en',
-  'es',
-  'fr',
-  'pt',
-  'de',
-  'it',
-  'pl',
-  'nl',
-  'ro',
-  'ru',
-  'tr',
-  'sv',
-  'da',
-  'fi',
-  'hr',
-] as const
+const LANGUAGES = SUPPORTED_LOCALES
 
 function resizeImage(file: File, maxPx: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -67,7 +51,7 @@ export function ProfileSection({ title }: { title?: string } = {}) {
 
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
-  const [nativeLanguage, setNativeLanguage] = useState('es')
+  const [nativeLanguage, setNativeLanguage] = useState('vi')
   const [uiLocale, setUiLocale] = useState(currentLocale)
   const [bio, setBio] = useState('')
   const [password, setPassword] = useState('')
@@ -86,7 +70,7 @@ export function ProfileSection({ title }: { title?: string } = {}) {
     if (user) {
       setDisplayName(user.displayName || '')
       setEmail(user.email || '')
-      setNativeLanguage(user.native_language || 'es')
+      setNativeLanguage(user.native_language || 'vi')
       setUiLocale(user.ui_locale || currentLocale)
       setBio(user.bio || '')
     }

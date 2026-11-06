@@ -617,7 +617,10 @@ async def test_chat_resets_partial_tool_response_before_persisting_fallback(
         )
     )
     assistant_message = result.scalar_one()
-    assert assistant_message.content == "Complete normal response."
+    assert assistant_message.content == (
+        "Complete normal response.\n\n"
+        "RAG chưa được cấu hình. Câu trả lời dựa trên kiến thức chung của mô hình."
+    )
 
 
 @pytest.mark.asyncio

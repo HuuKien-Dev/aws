@@ -429,14 +429,21 @@ does not change this session identity.
 The application distinguishes UI locale, native language, learned target language, active
 `UserLanguage`, and resource-owning `StudyPlan.target_language`.
 
-The interface locales are `en`, `es`, `fr`, `pt`, `de`, `it`, `pl`, `nl`, `ro`, `ru`, `tr`, `sv`, `da`, `fi`, and `hr`. Locale
-resolution uses `NEXT_LOCALE`, then `Accept-Language`, then English. Only header entries with a parsed
-quality greater than 0 and no greater than 1 are considered. The initial browser script preserves a
-supported `NEXT_LOCALE` value even when `LOCALE_DETECTED` is absent. Middleware passes the selected
+The interface locales are `vi`, `en`, `es`, `fr`, `pt`, `de`, `it`, `pl`, `nl`, `ro`, `ru`, `tr`, `sv`, `da`, `fi`, and `hr`.
+A valid `NEXT_LOCALE` is preserved; new visitors default to Vietnamese. Browser language detection
+does not replace this default. Vietnamese is also accepted as a native language in registration,
+profile updates and administrator-created accounts. Persisted user choices are not migrated or
+overwritten. The canonical target-language default remains `en-GB`. Middleware passes the selected
 locale to server rendering; missing catalogs fall back to English. After a successful profile save,
 Settings synchronizes `NEXT_LOCALE` and `LOCALE_DETECTED` with the selected interface locale. It reloads
 when that selection differs from the currently rendered locale, even if the profile already stores
 the selected value. A failed save leaves locale cookies and the displayed language unchanged.
+
+Bedrock inference and optional Knowledge Base retrieval are backend-owned. Retrieval operates on
+shared curriculum only; history, memory ownership, language isolation and authorization are unchanged.
+Chat persists actual retrieval source locations and labels no-match/disabled retrieval as general
+model knowledge. Speech can be explicitly disabled without disabling text learning. Corresponding
+modified source is configured through `CUSTOM_SOURCE_URL`; original author/license notices remain.
 
 Target-language metadata and typography are specified separately from UI localization.
 
@@ -468,3 +475,19 @@ Redis supports session rotation, invitations, rate limiting, quotas, and runtime
 - `memories.instructions.md` — tutor memory.
 - `speech-services.instructions.md` and `voice-conversation.instructions.md` — speech features.
 - `api-endpoints.instructions.md` and `database-models.instructions.md` — detailed contracts.
+
+## Bedrock API-key authentication
+
+Model inference also accepts `AWS_BEARER_TOKEN_BEDROCK` through the AWS SDK's native environment
+support. Compose forwards the optional token only to the backend; it is not a frontend setting,
+public-config field or model ID. The SDK selects bearer-token inference for a nonempty value;
+an empty value retains the standard IAM Role/SSO/profile chain. No additional SDK dependency,
+manual Authorization header or global environment mutation is required. The key must be valid,
+unexpired, authorized for the model and scoped to the configured region. Tokens are replaced
+outside the application and are never logged or returned. Provider authentication failures stay
+sanitized and do not silently switch authentication modes.
+
+Bedrock API keys do not authorize Knowledge Base `Retrieve`. Its `bedrock-agent-runtime` client
+explicitly uses SigV4 and still needs IAM credentials with `bedrock:Retrieve`. Inference can use a
+key alongside separate IAM credentials for retrieval. An inference-only configuration leaves the
+KB ID empty. TTS and STT remain independently configured.

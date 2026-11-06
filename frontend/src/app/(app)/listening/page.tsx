@@ -104,6 +104,7 @@ function ListeningPage() {
 
   const user = useAuthStore((s) => s.user)
   const stripeEnabled = useConfigStore((s) => s.stripeEnabled)
+  const ttsEnabled = useConfigStore((s) => s.ttsEnabled)
   const fetchFreemium = useFreemiumStore((s) => s.fetchStatus)
   const decrementFreemium = useFreemiumStore((s) => s.decrement)
   const freemiumStatus = useFreemiumStore((s) => s.status)
@@ -615,10 +616,13 @@ function ListeningPage() {
             </p>
             <button
               onClick={needsContext ? loadNext : handleGenerate}
+              disabled={!needsContext && !ttsEnabled}
+              title={!ttsEnabled ? tCommon('speechUnavailable') : undefined}
               className="border-fl-border bg-fl-surface text-fl-fg hover:bg-fl-surface-2 border px-8 py-3 font-mono text-sm tracking-widest uppercase transition-colors"
             >
               {needsContext ? tCommon('retry') : t('generate')}
             </button>
+            {!ttsEnabled && <p role="status">{tCommon('speechUnavailable')}</p>}
           </div>
         )}
       </div>

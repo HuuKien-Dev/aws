@@ -85,7 +85,7 @@ beforeEach(() => {
       subscription_status: 'none',
     },
   })
-  useConfigStore.setState({ stripeEnabled: false, maintenanceMode: false })
+  useConfigStore.setState({ stripeEnabled: false, maintenanceMode: false, ttsEnabled: true, sttEnabled: true })
   useLanguageStore.setState({ activeLanguage: getLanguageByCode('en-GB') ?? null })
   useFreemiumStore.setState({ status: null, loaded: false })
 })

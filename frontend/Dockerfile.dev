@@ -1,6 +1,6 @@
 FROM node:26.13.0-alpine
 
-WORKDIR /app
+WORKDIR /app/frontend
 
 RUN npm install -g npm@11.20.0
 

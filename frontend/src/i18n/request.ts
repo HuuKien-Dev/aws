@@ -6,7 +6,7 @@ function resolveLocale(raw: string | undefined): Locale {
   if (raw && (SUPPORTED_LOCALES as readonly string[]).includes(raw)) {
     return raw as Locale
   }
-  return 'en'
+  return 'vi'
 }
 
 export default getRequestConfig(async () => {
@@ -21,15 +21,18 @@ export default getRequestConfig(async () => {
 
   let messages
   try {
-    messages = (await import(`../../messages/${locale}.json`)).default
+    messages = (await import(`../../../messages/${locale}.json`)).default
   } catch {
     // Fallback to English if locale file is missing
     const defaultLocale = 'en'
-    messages = (await import(`../../messages/${defaultLocale}.json`)).default
+    messages = (await import(`../../../messages/${defaultLocale}.json`)).default
   }
 
   return {
     locale,
-    messages,
+    messages: {
+      ...messages,
+      languages: { ...messages.languages, vi: 'Tiếng Việt' },
+    },
   }
 })

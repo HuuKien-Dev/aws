@@ -5,6 +5,26 @@ applyTo: "frontend/**, messages/**"
 
 # Frontend Architecture
 
+## Vietnamese custom edition
+
+`messages/vi.json` supplies Vietnamese interface copy; `lib/locales.ts` includes `vi`. Registration
+defaults native language to Vietnamese. Existing profile and `NEXT_LOCALE` preferences are preserved.
+Middleware uses Vietnamese for new visitors instead of browser language detection. Catalog imports
+resolve the monorepo `messages/` directory; containers expose the same relative location at
+`/app/messages`, beside `/app/frontend`. Turbopack and output-file tracing use the common monorepo
+root so catalogs are resolved both locally and in containers. Standalone output keeps the
+`frontend/server.js` relative path. No AI provider is called from the frontend.
+
+The public config store exposes `ttsEnabled`, `sttEnabled` and `customSourceUrl`. Recording, TTS
+generation, lesson voice practice and voice sessions are disabled with a clear message when their
+speech providers are disabled. New listening generation needs TTS; existing saved audio remains
+playable. Flags describe configured availability, not a successful live provider health probe.
+
+`CustomEditionNotice` loads public configuration and shows original FreeLingo authorship, AGPL-3.0
+and the configured corresponding-source URL for the deployed modified version. An unset URL is
+shown explicitly. Retrieved reference locations remain plain text in chat history and lesson
+explanations; the frontend does not fabricate or fetch S3 links with AWS credentials.
+
 ## Role and boundaries
 
 The frontend is a Next.js App Router application responsible for presentation, navigation, browser
@@ -156,9 +176,9 @@ summary.
 WebSocket voice conversation connects from the browser to `/ws/conversation`; production routing must
 forward `/ws/*` to the backend.
 
-## Lingu avatar
+## Ligo avatar
 
-Voice conversations show the animated Lingu avatar between the transcript and controls, at 65 × 65
+Voice conversations show the animated Ligo avatar between the transcript and controls, at 65 × 65
 px on mobile and 200 × 200 px on desktop. Its animation follows assistant speech, user speech, and
 response preparation; listening is the idle fallback. Written chat shows a 55 × 55 px avatar in the
 conversation header, switching between thinking while a response is generated and resting otherwise.
@@ -353,32 +373,27 @@ not advance the queue. No flashcard content or preference is persisted in browse
 ## Public landing
 
 `app/page.tsx` is server-rendered. Its hero introduces the study plan, practice and voice conversation
-with Lingu. The `#features` anchor leads to an ordered three-step learning journey: level assessment
+with Ligo. The `#features` anchor leads to an ordered three-step learning journey: level assessment
 and a structured A1–C2 curriculum, comprehension/vocabulary practice and the three available games,
-then speaking with Lingu. The steps connect horizontally on desktop and vertically on mobile without
+then speaking with Ligo. The steps connect horizontally on desktop and vertically on mobile without
 additional animation or client-side state. Game names reuse the `games` translation namespace.
 
 The static written English correction example accompanies an explanation of voice practice started
-from a completed lesson, whose content and answered exercises can inform Lingu's conversation. It
+from a completed lesson, whose content and answered exercises can inform Ligo's conversation. It
 uses `TargetLanguageText` with `en-GB`, localized labels, and no simulated controls or API requests.
 Spaced repetition, XP and streaks are supplementary copy rather than a separate feature grid.
-The hero retains the single animated Lingu in `LanguageBubbles`. A short line links to `#modalities`,
-whose two cards precede pricing and distinguish FreeLingo Cloud from self-hosting. Cloud copy describes
-managed hosting, updates and AI/voice within plan limits. Self-hosting copy identifies AGPL-3.0 software,
-operator-owned maintenance and infrastructure/provider costs. The Cloud card links explicitly to
-`https://freelingo.app/login`, independently of the current instance's registration/session state;
-the installation guide links to the repository's `#quick-start`. The cards render without reveal
-gating. Reviews, local learning CTAs and checkout retain
-their existing flows.
-The comparison explicitly distinguishes the main action for the current installation from the official
-Cloud link and states that accounts and progress are installation-specific. Stripe availability is not
-treated as proof that an installation is the official Cloud service.
+The hero retains the single animated Ligo in `LanguageBubbles`. The application home page
+focuses on the software and learning journey; it does not show deployment comparisons, Cloud
+signup links or installation instructions. Reviews and local learning CTAs retain their flows.
 
-`LandingFAQ` uses its own `landing.faq` translations rather than the authenticated help catalog. Its
-six questions cover deployment modes, free signup versus the card-based Premium trial, self-hosting
-requirements, storage and external processing, study languages, and the learning journey. Answers stay
-in the rendered HTML, with inactive panels hidden; buttons expose `aria-expanded`, `aria-controls`
+`LandingFAQ` uses the study-language and getting-started entries from `landing.faq`. Answers stay
+in rendered HTML, with inactive panels hidden; buttons expose `aria-expanded`, `aria-controls`
 and labelled answer regions. Opening a question retains the anonymous `faq_viewed` event.
+
+An explicit `ui_locale` query parameter selects a supported UI language, saves the preference and
+redirects to the same URL without that parameter. Protected routes still require authentication.
+The custom edition footer offers an explicit Vietnamese switch for other UI languages. Locale
+cookies use Secure on HTTPS; existing preferences remain respected without an explicit switch.
 
 The English static project site in `docs/index.html` retains its general overview, feature cards,
 deployment comparison and open-source/licensing section. It shares the Cloud/self-hosted terminology,
@@ -386,6 +401,8 @@ learning journey and operational distinctions without duplicating dynamic prices
 Its CTAs lead to FreeLingo Cloud and the repository installation guide. The CSS keeps the existing
 solid blue-tinted theme and language orbit, compact hero spacing, visible keyboard focus and
 reduced-motion support.
+
+The hero also exposes a direct login button alongside signup for anonymous visitors when registration is open.
 
 Hero and end-of-journey CTAs share the same destination: `/dashboard` for a session cookie,
 `/register` for anonymous visitors when registration is open, otherwise `/login`. Anonymous signup
@@ -397,7 +414,7 @@ config exposes the signup-trial flag but not `FREEMIUM_TRIAL_DAYS`. This signup 
 of the optional Stripe subscription trial. A missing Stripe trial duration defaults to zero on the
 landing rather than advertising unconfirmed additional days.
 
-Landing copy and page-specific metadata use `next-intl` in all fifteen interface catalogs. Metadata,
+Landing copy and page-specific metadata use `next-intl` in all sixteen interface catalogs. Metadata,
 Open Graph, Twitter and the software-application description communicate the structured learning
 journey. The new content renders without reveal gating, and CTA transitions respect reduced motion
 and include visible keyboard focus.
@@ -458,11 +475,11 @@ names alphabetically using the active UI locale's collation. The translation edi
 incomplete translations with a localized pending suffix, without adding completion checkmarks to
 options; the overall completion counter remains visible.
 
-Product copy names Lingu when describing the tutor's actions, conversations, and exercise preparation.
+Product copy names Ligo when describing the tutor's actions, conversations, and exercise preparation.
 References to AI remain appropriate for technology, providers, and usage; this editorial convention
 does not replace disclosures in privacy policies or terms. Apply wording consistently by meaning
-across all fifteen UI catalogs, preserving translation keys, interpolation variables, and rich-text
-tags. Reading and Listening generation descriptions name Lingu without promising a fixed wait time.
+across all sixteen UI catalogs, preserving translation keys, interpolation variables, and rich-text
+tags. Reading and Listening generation descriptions name Ligo without promising a fixed wait time.
 
 ## Streaming and media
 
@@ -471,7 +488,7 @@ It keeps one `components/lingu/LinguAvatar.tsx` mounted across steps. The avatar
 `LinguScene.tsx` and Three.js only when visible and motion is allowed. The fixed-camera scene frames
 sampled animation bounds, cross-fades clips, caps pixel ratio, pauses animation updates in hidden tabs,
 and disposes its renderer, geometry, materials, and requests on unmount. A loading indicator remains
-visible until the first rendered frame; static Lingu artwork is used for reduced motion and
+visible until the first rendered frame; static Ligo artwork is used for reduced motion and
 renderer/model failures. The optional `onReady` callback signals the first rendered animation frame or
 the resolved static fallback, after the browser's motion preference is known.
 
@@ -506,7 +523,7 @@ The reserved space, surrounding language positions, and container dimensions rem
 Flag images use fixed 14 × 10 px boxes matching their declared image dimensions, with flex shrinking
 disabled and centered `object-cover` cropping to keep a uniform size without stretching the artwork.
 Bubble floating starts when the group is ready. Reduced motion disables the entrance transition
-and floating; reduced motion and loading failures reveal the group with static Lingu artwork.
+and floating; reduced motion and loading failures reveal the group with static Ligo artwork.
 An optional `className` overrides the avatar's default responsive dimensions so other surfaces
 can size it to their own container.
 

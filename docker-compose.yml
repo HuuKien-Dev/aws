@@ -44,6 +44,15 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
       LLM_PROVIDER: ${LLM_PROVIDER}
+      AWS_REGION: ${AWS_REGION:-}
+      AWS_BEARER_TOKEN_BEDROCK: ${AWS_BEARER_TOKEN_BEDROCK:-}
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-}
+      BEDROCK_MAX_TOKENS: ${BEDROCK_MAX_TOKENS:-8192}
+      BEDROCK_TIMEOUT_SECONDS: ${BEDROCK_TIMEOUT_SECONDS:-120}
+      BEDROCK_KNOWLEDGE_BASE_ID: ${BEDROCK_KNOWLEDGE_BASE_ID:-}
+      BEDROCK_RAG_RESULTS: ${BEDROCK_RAG_RESULTS:-5}
+      BEDROCK_RAG_MIN_SCORE: ${BEDROCK_RAG_MIN_SCORE:-0.5}
+      CUSTOM_SOURCE_URL: ${CUSTOM_SOURCE_URL:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
       OLLAMA_MODEL: ${OLLAMA_MODEL}
       EXERCISE_GENERATION_TIMEOUT_SECONDS: ${EXERCISE_GENERATION_TIMEOUT_SECONDS:-600}
@@ -138,6 +147,7 @@ services:
   # CPU-only host: use :cpu-latest and remove the 'deploy' block.
   # See: https://github.com/remsky/Kokoro-FastAPI
   kokoro:
+    profiles: [speech-local]
     image: ghcr.io/remsky/kokoro-fastapi-gpu:latest-cu128
     container_name: freelingo-kokoro
     restart: unless-stopped
@@ -158,6 +168,7 @@ services:
   # CPU-only host:     replace image tag with onerahmet/openai-whisper-asr-webservice:latest
   #                    set ASR_MODEL=base or small, and remove the entire 'deploy' block.
   whisper:
+    profiles: [speech-local]
     image: onerahmet/openai-whisper-asr-webservice:latest-gpu
     container_name: freelingo-whisper
     restart: unless-stopped

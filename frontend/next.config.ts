@@ -1,11 +1,17 @@
 import createNextIntlPlugin from 'next-intl/plugin'
 import type { NextConfig } from 'next'
+import { resolve } from 'node:path'
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
+const workspaceRoot = resolve(__dirname, '..')
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   output: 'standalone',
+  outputFileTracingRoot: workspaceRoot,
+  turbopack: {
+    root: workspaceRoot,
+  },
   typescript: {
     tsconfigPath: 'tsconfig.build.json',
   },

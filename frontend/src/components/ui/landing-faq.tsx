@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { trackBrowserEvent } from '@/lib/analytics'
 import { useConfigStore } from '@/store/config'
 
-const FAQ_KEYS = ['modes', 'free', 'hosting', 'data', 'languages', 'start']
+const FAQ_KEYS = ['languages', 'start']
 
 export function LandingFAQ() {
   const t = useTranslations('landing.faq')

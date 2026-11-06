@@ -151,6 +151,7 @@ _VOICE_SESSION_TITLES: dict[str, str] = {
 }
 
 _NATIVE_LANGUAGE_NAMES: dict[str, str] = {
+    "vi": "Vietnamese",
     "en": "English",
     "es": "Spanish",
     "fr": "French",
@@ -169,6 +170,7 @@ _NATIVE_LANGUAGE_NAMES: dict[str, str] = {
 }
 
 _LESSON_PRACTICE_TITLES: dict[str, str] = {
+    "vi": "Luyện tập",
     "en": "Practice",
     "es": "Práctica",
     "fr": "Pratique",

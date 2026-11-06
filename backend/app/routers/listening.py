@@ -176,6 +176,8 @@ async def generate_exercise(
     level, target_language = plan.cefr_level, plan.target_language
     if await get_available_exercise(level, target_language, current_user.id, db) is not None:
         return ListeningGeneratingResponse(status="available")
+    if getattr(request.app.state, "tts_service", None) is None:
+        raise HTTPException(status_code=503, detail="Dịch vụ đọc văn bản chưa được cấu hình.")
     lock_key = f"listening:generating:{level}:{target_language}"
 
     lease = await GenerationLease.acquire(redis, lock_key)
@@ -225,13 +227,17 @@ async def get_audio(
     if exercise.target_language != plan.target_language:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="exercise_not_found")
 
-    audio_path = os.path.join(settings.AUDIO_STORAGE_PATH, "listening", f"{exercise_id}.mp3")
+    # Only a known extension comes from persistence; the integer ID owns the path.
+    extension = "wav" if exercise.audio_path.endswith(".wav") else "mp3"
+    audio_path = os.path.join(
+        settings.AUDIO_STORAGE_PATH, "listening", f"{exercise_id}.{extension}"
+    )
     if not os.path.isfile(audio_path):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="audio_not_found")
 
     return FileResponse(
         path=audio_path,
-        media_type="audio/mpeg",
+        media_type="audio/wav" if extension == "wav" else "audio/mpeg",
         headers={"Accept-Ranges": "bytes"},
     )
 

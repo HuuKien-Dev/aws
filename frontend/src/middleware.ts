@@ -34,31 +34,35 @@ function detectLocale(req: NextRequest): Locale {
     return cookie as Locale
   }
 
-  // 2. Parse Accept-Language header with q-weight sorting
-  const accept = req.headers.get('accept-language') ?? ''
-  const parsed = accept
-    .split(',')
-    .map((part) => {
-      const [langTag, ...params] = part.trim().split(';')
-      const qParam = params.find((p) => p.trim().startsWith('q='))
-      const q = qParam ? parseFloat(qParam.split('=')[1]) : 1.0
-      const lang = langTag.trim().split(/[-_]/)[0].toLowerCase()
-      return { lang, q: isNaN(q) ? 0 : q }
-    })
-    .filter(({ q }) => q > 0 && q <= 1)
-    .sort((a, b) => b.q - a.q)
-
-  for (const { lang } of parsed) {
-    if ((SUPPORTED_LOCALES as readonly string[]).includes(lang)) {
-      return lang as Locale
-    }
-  }
-
-  // 3. Default to English
-  return 'en'
+  // New visitors use Vietnamese; an existing choice always takes precedence.
+  return 'vi'
 }
 
 export function middleware(req: NextRequest) {
+  // A deliberate language switch takes precedence over a saved preference.
+  const requestedLocale = req.nextUrl.searchParams.get('ui_locale')
+  if (
+    requestedLocale &&
+    (SUPPORTED_LOCALES as readonly string[]).includes(requestedLocale)
+  ) {
+    const destination = req.nextUrl.clone()
+    destination.searchParams.delete('ui_locale')
+    if (
+      !req.cookies.has('refresh_token') &&
+      PROTECTED_ROUTES.some((route) => destination.pathname.startsWith(route))
+    ) {
+      destination.pathname = '/login'
+    }
+    const response = NextResponse.redirect(destination)
+    response.cookies.set('NEXT_LOCALE', requestedLocale, {
+      path: '/',
+      sameSite: 'lax',
+      secure: req.nextUrl.protocol === 'https:',
+      maxAge: 60 * 60 * 24 * 365,
+    })
+    return response
+  }
+
   // Detect locale first so we can forward it as a request header.
   // This is needed because request.ts reads incoming request headers/cookies;
   // a cookie set only on the response is not visible on that same request cycle.
@@ -75,7 +79,7 @@ export function middleware(req: NextRequest) {
       response.cookies.set('NEXT_LOCALE', locale, {
         path: '/',
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: req.nextUrl.protocol === 'https:',
         maxAge: 60 * 60 * 24 * 365,
       })
     }
@@ -94,7 +98,7 @@ export function middleware(req: NextRequest) {
     response.cookies.set('NEXT_LOCALE', locale, {
       path: '/',
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: req.nextUrl.protocol === 'https:',
       maxAge: 60 * 60 * 24 * 365,
     })
   }

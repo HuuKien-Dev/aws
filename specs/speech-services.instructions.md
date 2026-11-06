@@ -14,6 +14,17 @@ Text-to-speech (TTS) and speech-to-text (STT) are configured independently. Thei
 objects are created during FastAPI startup and stored in `app.state.tts_service` and
 `app.state.stt_service`.
 
+Either provider can explicitly be `disabled`; its service object is then `None`. This permits web,
+text tutoring and reading without speech hardware. Bedrock is an LLM provider and never substitutes
+for TTS or STT. `/api/config` exposes `tts_enabled` and `stt_enabled` as configuration flags, not
+provider-health guarantees. Administrative health reports intentionally absent adapters as `disabled`.
+TTS and STT routes retain their unavailable responses, recording/generated-TTS controls are disabled,
+and voice-session/lesson-practice controls require both services. New Listening generation returns
+503 without TTS; persisted audio and existing listening exercises remain accessible.
+
+Kokoro and Whisper are preserved under the optional `speech-local` Compose profile. That profile
+reserves NVIDIA devices; the default custom example disables speech for CPU-only Ubuntu/VMware.
+
 ## Provider configuration
 
 TTS configuration:
@@ -155,7 +166,7 @@ There is no implicit English fallback.
 ### `POST /api/tts/tour/{locale}/{step}`
 
 - Requires authentication; rate limit `20/minute`.
-- Accepts one of the fifteen UI locales and `step1` through `step7`; unknown values return `404`.
+- Accepts one of the sixteen UI locales, including `vi`, and `step1` through `step7`; unknown values return `404`.
 - `messages/*.json` owns tour copy. The frontend resolves the displayed paragraph through i18n and
   sends it as `text` in the JSON request body. The backend validates text length (1–5000 characters;
   invalid or missing text returns `422`) and synthesizes that supplied text.

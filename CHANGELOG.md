@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Vietnamese custom edition
+
+### Added
+
+- Support native Bedrock API-key inference through the backend environment while retaining IAM authentication for Knowledge Base retrieval.
+
+- Vietnamese interface and native-language support, with Vietnamese as the new-visitor default and
+  Vietnamese explanations for Vietnamese-speaking text-tutor users.
+- Vietnamese system emails for account flows, contact, feedback and review notifications.
+- Backend Amazon Bedrock Converse/ConverseStream integration using the AWS SDK credential chain,
+  explicit region/model configuration, memory tool calls and existing validated JSON generation.
+- Optional Amazon Bedrock Knowledge Base retrieval for tutor chat and lesson generation, with actual
+  retrieved source locations and explicit general-knowledge/no-match notices.
+- A deployment-source link setting and FreeLingo attribution notice for the modified edition.
+
+### Changed
+
+- Report missing Bedrock configuration and distinct AI failures when generating flashcards.
+
+- Rename the customized tutor to Ligo and expose a direct login button in the home-page hero.
+
+- Focus the application home page on learning features; remove deployment comparisons and installation guidance. Add an explicit Vietnamese interface switch that respects saved preferences.
+
+- Local development builds source and keeps data mounts; local GPU speech is opt-in through the
+  `speech-local` profile. Disabled speech is visible in the interface and administrative diagnostics.
+- Translation catalogs resolve consistently in the checkout and container builds.
+
+### Removed
+
+- Two unreferenced GitHub SVG assets, duplicate registration/settings language lists, unused context
+  constants and the browser locale-detection script that conflicted with the Vietnamese default.
+
 ## [1.11.0] - 2026-11-02
 
 ### Added

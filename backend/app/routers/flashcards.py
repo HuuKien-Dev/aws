@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.limiter import limiter
@@ -308,6 +309,13 @@ async def generate_flashcards_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     plan = await _get_active_plan_or_404(db, current_user.id)
+    if settings.LLM_PROVIDER == "bedrock" and (
+        not settings.AWS_REGION or not settings.BEDROCK_MODEL_ID
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ai_not_configured",
+        )
     try:
         existing = await db.execute(
             select(Flashcard.word).where(

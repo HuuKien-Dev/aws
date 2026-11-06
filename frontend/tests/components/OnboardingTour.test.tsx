@@ -50,7 +50,7 @@ function showTour(withNews = false) {
 }
 
 beforeEach(() => {
-  useConfigStore.setState({ analyticsEnabled: false })
+  useConfigStore.setState({ analyticsEnabled: false, ttsEnabled: true })
   localStorage.clear()
   MockAudio.instances = []
   useAuthStore.setState({ accessToken: 'test-token', user: null })
@@ -86,6 +86,17 @@ afterEach(() => {
 })
 
 describe('dashboard tour', () => {
+  it('disables speech without TTS while keeping tour navigation available', async () => {
+    useConfigStore.setState({ ttsEnabled: false })
+    showTour()
+    const listen = await screen.findByRole('button', { name: es.tour.listen })
+    expect(listen).toBeDisabled()
+    expect(listen).toHaveAttribute('title', es.common.speechUnavailable)
+    fireEvent.click(listen)
+    expect(fetch).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: es.tour.next }))
+    expect(screen.getByText(es.tour.step2.desc)).toBeVisible()
+  })
   it.each(['complete', 'skip'])(
     'reports a tour start and its %s outcome without step content',
     async (outcome) => {

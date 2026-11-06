@@ -271,7 +271,17 @@ function FlashcardsContent({
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.detail || `Error ${res.status}`)
+        const errorKey =
+          data.detail === 'ai_not_configured'
+            ? 'aiNotConfigured'
+            : res.status === 504
+              ? 'aiTimeout'
+              : res.status === 503
+                ? 'aiUnavailable'
+                : res.status === 502
+                  ? 'aiGenerationError'
+                  : ''
+        throw new Error(errorKey || data.detail || `Error ${res.status}`)
       }
       const result = await res.json()
       if (!isCurrent()) return
@@ -282,10 +292,18 @@ function FlashcardsContent({
     } catch (err: unknown) {
       if (!isCurrent()) return
       const msg = err instanceof Error ? err.message : ''
+      const aiErrors = [
+        'aiNotConfigured',
+        'aiTimeout',
+        'aiUnavailable',
+        'aiGenerationError',
+      ]
       setGenError(
-        msg === 'No active study plan found'
-          ? tCommon('noActivePlan')
-          : tCommon('errorMessage')
+        aiErrors.includes(msg)
+          ? t(msg)
+          : msg === 'No active study plan found'
+            ? tCommon('noActivePlan')
+            : tCommon('errorMessage')
       )
     } finally {
       generatingRef.current = false

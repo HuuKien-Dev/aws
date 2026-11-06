@@ -13,7 +13,24 @@ The frontend never calls an external provider directly.
 
 ## LLM adapter
 
-`llm_adapter.py` provides provider-neutral access to Ollama, OpenAI, Anthropic, and DeepSeek.
+`llm_adapter.py` provides provider-neutral access to Bedrock, Ollama, OpenAI, Anthropic, and DeepSeek.
+
+`bedrock_service.py` uses boto3 Converse for text/JSON generation and ConverseStream for streaming,
+including native memory tool calls and tool-result continuation. Region and model/inference-profile
+ID are explicit settings; there is no guessed Bedrock model. The AWS SDK default credential chain
+supports EC2 roles and securely provisioned local profiles. SDK calls run in worker threads; retries
+belong to the adapter rather than stacking SDK retries. Missing configuration fails at inference,
+not application import. Unsupported model capabilities fail visibly without a no-tools fallback.
+
+`rag_service.py` optionally queries an existing shared-curriculum Bedrock Knowledge Base through
+`Retrieve`. Chat uses the latest question plus target language/CEFR; lesson generation uses its topic
+and level. Profile details, memories and complete histories are not used as retrieval queries.
+Score-filtered, bounded text excerpts are untrusted user-role data under a system policy. Actual AWS
+S3/web locations are rendered as provenance in saved chat responses and lesson explanations.
+These are retrieved references, not guaranteed claim-level citations. No match and disabled RAG are
+distinguished from document-grounded answers; retrieval errors propagate rather than becoming empty
+results. The KB must contain only material shared by every installation user. Resource provisioning,
+ingestion, private-document authorization and local vector storage are outside this integration.
 
 OpenAI uses the Responses API for every LLM request; Ollama and DeepSeek use Chat Completions and
 Anthropic uses its native API. The OpenAI model defaults to `gpt-6-luna`. Optional
@@ -34,6 +51,7 @@ validation contract, and `parallel_tool_calls=false`; the adapter still enforces
   or a normalized async stream.
 - Tool streaming executes at most the first tool call, performs one native continuation, exposes tool
   results and usage, and can reset visible output before a complete no-tools fallback.
+  Bedrock preserves the one-call limit but propagates errors instead of dropping tools.
 - Explicit tool incompatibility raises/records `LLMToolsUnsupportedError`; voice remembers that state
   only for its current WebSocket session.
 - `structured_output(messages, schema, deadline=None)` requests JSON and validates a Pydantic model,
@@ -232,9 +250,11 @@ check-then-use flow is not one atomic transaction. A freemium feature limit of z
 
 ## Email
 
-`email_service.py` renders escaped localized HTML and sends mail only when email is enabled. Public
-methods cover verification, password reset, welcome, account deletion, contact, feedback, and review
-notifications. User-facing locale comes from the recipient; administrator notifications use the first
+`email_service.py` renders escaped localized HTML and sends mail only when email is enabled. Its
+catalogs include Vietnamese for verification, password reset, welcome, deletion, contact,
+feedback and review notifications. The rendered HTML language matches the selected catalog;
+interpolation values retain the existing escaping behavior. User-facing locale comes from the
+recipient; administrator notifications use the first
 administrator's native language with English fallback. Notification failures after durable feedback or
 review creation are logged without rolling back that content.
 
@@ -265,3 +285,19 @@ and private prompt content must not be logged.
 - `prompts.instructions.md`: prompt ownership and composition.
 - `llm-error-handling.instructions.md`: normalized provider failures.
 - Domain specs: feature-specific rules and frontend behavior.
+
+## Bedrock API-key authentication
+
+Model inference also accepts `AWS_BEARER_TOKEN_BEDROCK` through the AWS SDK's native environment
+support. Compose forwards the optional token only to the backend; it is not a frontend setting,
+public-config field or model ID. The SDK selects bearer-token inference for a nonempty value;
+an empty value retains the standard IAM Role/SSO/profile chain. No additional SDK dependency,
+manual Authorization header or global environment mutation is required. The key must be valid,
+unexpired, authorized for the model and scoped to the configured region. Tokens are replaced
+outside the application and are never logged or returned. Provider authentication failures stay
+sanitized and do not silently switch authentication modes.
+
+Bedrock API keys do not authorize Knowledge Base `Retrieve`. Its `bedrock-agent-runtime` client
+explicitly uses SigV4 and still needs IAM credentials with `bedrock:Retrieve`. Inference can use a
+key alongside separate IAM credentials for retrieval. An inference-only configuration leaves the
+KB ID empty. TTS and STT remain independently configured.

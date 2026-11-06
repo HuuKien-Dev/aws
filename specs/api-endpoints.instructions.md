@@ -22,6 +22,17 @@ in `rate-limiting.instructions.md`.
 
 ## Config — `/api/config`
 
+The public response also includes `tts_enabled`, `stt_enabled` and `custom_source_url`. Speech flags
+indicate configured adapters, not a live health check. No AWS credentials, model identifiers or
+Knowledge Base identifiers are exposed. Administrative health reports absent speech adapters as
+`disabled`; this alone does not make the application degraded.
+
+Vietnamese (`vi`) is accepted by native-language registration/profile/admin contracts and as a UI
+locale. Existing language choices and default target `en-GB` remain intact. Text chat SSE tokens and
+stored assistant content include application-generated retrieval provenance when applicable; no new
+client-controlled KB or source endpoint is introduced. Listening generation returns 503 when no TTS
+adapter is registered, unless an available exercise can be reused.
+
 - **GET `/api/config`** — Rate limit: 60/min. Public runtime configuration flags for the frontend. Returns non-sensitive values including `allow_registration` (boolean, from `settings.ALLOW_REGISTRATION`), Stripe enablement/prices, TTS provider/voice, `maintenance_mode`, `freemium_trial_enabled`, and `dashboard_banner`. The banner field is `null` when no active singleton exists; otherwise it is `{revision, translations}` and omits admin-only source locale, active state, and timestamps.
 
 ---
@@ -91,7 +102,7 @@ source IDs remain private; failed attempts never reveal the solution.
 - **POST `/refresh`** — Rate limit: 60/min. Requires a valid refresh cookie, rotates it and returns a new `access_token`. Optional `Authorization: Bearer ...` and `X-Expected-User-ID` (positive PostgreSQL-range integer; invalid values return 422) restrict renewal to the client's known account. The bearer must have a valid HS256 signature and `sub`/`exp` claims; expiry is ignored only for this context comparison. Invalid bearer context returns 401. Each supplied expectation must match the account in Redis; a mismatch returns 409 `auth_context_changed` before consuming the refresh token or setting a replacement cookie. Expectations never authorize renewal without a valid cookie. Omitting both supports initial restoration with no known client identity.
 - **POST `/logout`** — Rate limit: 60/min. Deletes refresh token from Redis, clears cookie
 - **GET `/me`** — Rate limit: 60/min. Returns authenticated user profile, including subscription fields (`subscription_status`, `subscription_ends_at`, `cancel_at_period_end`, `trial_used`, `assessment_voice_trial_used`), freemium fields (`freemium_trial_ends_at`, `freemium_trial_used`), and nullable `dismissed_dashboard_banner_revision`.
-- **PATCH `/me`** — Rate limit: 60/min. Updates display name, email, password, native language, target language, UI locale, bio, learning goals, and conversation settings (`conversation_max_duration` ∈ {900, 1800}, `conversation_inactivity_timeout` ∈ {60, 180, 300}, `conversation_speech_pause` ∈ {0, 1000, 2000, 3000} milliseconds, where `0` means automatic). `native_language` is validated against the same supported UI-language codes used at registration (`en`, `es`, `fr`, `pt`, `de`, `it`, `ru`, `nl`, `pl`, `ro`, `tr`, `sv`, `da`, `fi`, `hr`); unsupported codes return HTTP 422 even when the API is called outside the selector-based frontend.
+- **PATCH `/me`** — Rate limit: 60/min. Updates display name, email, password, native language, target language, UI locale, bio, learning goals, and conversation settings (`conversation_max_duration` ∈ {900, 1800}, `conversation_inactivity_timeout` ∈ {60, 180, 300}, `conversation_speech_pause` ∈ {0, 1000, 2000, 3000} milliseconds, where `0` means automatic). `native_language` is validated against the same supported UI-language codes used at registration (`vi`, `en`, `es`, `fr`, `pt`, `de`, `it`, `ru`, `nl`, `pl`, `ro`, `tr`, `sv`, `da`, `fi`, `hr`); unsupported codes return HTTP 422 even when the API is called outside the selector-based frontend.
 - **POST `/me/avatar`** — Rate limit: 60/min. Uploads the authenticated user's profile avatar (JPEG/PNG, max 2 MB). Validates the declared content type, image signature, and minimal image structure, stores the image on disk under `/app/avatars` using a non-predictable UUID filename, and returns the user profile with `avatar` set to a cache-busted internal reference (`/api/avatars/{uuid}.{ext}?v={ms}`). The file reference is not publicly served.
 - **GET `/me/avatar-file`** — Rate limit: 60/min. Authenticated current-user avatar retrieval endpoint. Returns only the authenticated user's own avatar file; this is the supported image retrieval path used by the frontend. Responses are marked `Cache-Control: private, no-store`; client-side avatar reuse is handled by the frontend blob cache keyed by the stored avatar reference.
 - **DELETE `/me/avatar`** — Rate limit: 60/min. Removes profile avatar (sets to null)
@@ -467,3 +478,8 @@ All endpoints require `get_current_user`.
 - **GET `/{category_id}`** — Rate limit: 60/min. Auth: get_current_user. Returns a single phrasebook category by ID. Query param: `language`. Returns 404 if not found.
 - **POST `/{category_id}/native-help`** — Rate limit: 10/min. Auth: get_current_user. Query param: `language` (BCP-47, default `en-GB`). Generates or returns cached native-language study help for a phrasebook category, keyed globally by category ID, target language, and native language; the source hash determines cache freshness. Response: `{native_help: {summary, usage_tips, register_notes, phrase_notes, common_traps, mini_glossary}}`. Returns 404 if the category does not exist and 503 if generation is unavailable or already in progress.
 - **GET `/audio/{category_id}/{phrase_index}`** — Rate limit: 30/min. Auth: get_current_user. Returns cached TTS audio (audio/mpeg) for a specific phrase. Generates and caches on first request; subsequent requests serve from disk. Query param: `language`, also passed to synthesis for pronunciation guidance when supported. Instruction-capable OpenAI models use synthesis-specific cache keys including model and instructions. Responses use `Cache-Control: no-store` so browser caches do not mask synthesis changes. Returns 404 if category or phrase index not found, 503 if TTS service unavailable.
+
+Flashcard generation returns HTTP 503 with `ai_not_configured` when Bedrock is selected without
+a region or model. This check runs after authentication and active-plan ownership resolution and
+before inference or card writes. The flashcard UI distinguishes missing configuration, timeouts,
+unavailability and generation failures with localized messages; it never substitutes sample cards.

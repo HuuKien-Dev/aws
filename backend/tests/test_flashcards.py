@@ -864,3 +864,27 @@ async def test_from_word_promotion_response_survives_delete_after_commit(
     assert response.status_code == 200
     assert response.json()["id"] == card_id
     assert response.json()["source"] == "from_text"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("region,model", [("", ""), ("example-region", ""), ("", "example-model")])
+async def test_generate_reports_missing_bedrock_configuration(
+    client, test_user, db_session, monkeypatch, region, model
+):
+    import app.routers.flashcards as router
+    from app.core.config import settings
+
+    await _seed_plan(db_session, test_user[0].id)
+    monkeypatch.setattr(settings, "LLM_PROVIDER", "bedrock")
+    monkeypatch.setattr(settings, "AWS_REGION", region)
+    monkeypatch.setattr(settings, "BEDROCK_MODEL_ID", model)
+    generate = AsyncMock()
+    monkeypatch.setattr(router, "generate_flashcards", generate)
+    response = await client.post(
+        "/api/flashcards/generate",
+        headers=test_user[1],
+        json={"topic": "du lich", "count": 5, "cefr_level": "A1"},
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"] == "ai_not_configured"
+    generate.assert_not_awaited()

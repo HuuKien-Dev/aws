@@ -48,7 +48,7 @@ async def admin_health(
         tts = getattr(request.app.state, "tts_service", None)
         if tts is not None:
             await tts.health()
-        checks["tts"] = "ok"
+        checks["tts"] = "ok" if tts is not None else "disabled"
     except Exception as exc:
         checks["tts"] = f"error: {exc}"
         ok = False
@@ -57,7 +57,7 @@ async def admin_health(
         stt = getattr(request.app.state, "stt_service", None)
         if stt is not None:
             await stt.health()
-        checks["stt"] = "ok"
+        checks["stt"] = "ok" if stt is not None else "disabled"
     except Exception as exc:
         checks["stt"] = f"error: {exc}"
         ok = False

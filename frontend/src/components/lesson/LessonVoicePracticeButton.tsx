@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Mic } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { TargetLanguageText } from '@/components/TargetLanguageText'
+import { useConfigStore } from '@/store/config'
 
 export function LessonVoicePracticeButton({
   lessonId,
@@ -17,6 +18,8 @@ export function LessonVoicePracticeButton({
   targetLanguage?: string
 }) {
   const t = useTranslations('lessonPractice')
+  const tCommon = useTranslations('common')
+  const speechEnabled = useConfigStore((s) => s.ttsEnabled && s.sttEnabled)
   const locale = useLocale()
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -25,6 +28,8 @@ export function LessonVoicePracticeButton({
     <>
       <button
         type="button"
+        disabled={!speechEnabled}
+        title={!speechEnabled ? tCommon('speechUnavailable') : undefined}
         onClick={() => setOpen(true)}
         className="border-fl-border text-fl-fg hover:bg-fl-surface-2 inline-flex items-center justify-center gap-2 border px-4 py-3 font-sans text-sm transition-colors"
       >

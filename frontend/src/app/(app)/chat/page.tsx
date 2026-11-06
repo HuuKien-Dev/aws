@@ -497,7 +497,7 @@ export default function ChatPage() {
                     {msg.role === 'assistant' ? (
                       <Image
                         src="/logo_head.png"
-                        alt="Lingu"
+                        alt="Ligo"
                         width={28}
                         height={28}
                         className="h-full w-full object-cover"

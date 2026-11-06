@@ -43,8 +43,11 @@ interface LessonPractice {
 }
 
 export default function ConversationPage() {
+  const tCommon = useTranslations('common')
+  const speechEnabled = useConfigStore((s) => s.ttsEnabled && s.sttEnabled)
   const searchParams = useSearchParams()
   const lessonId = searchParams.get('lesson')
+  if (!speechEnabled) return <p role="status">{tCommon('speechUnavailable')}</p>
   return lessonId !== null ? (
     <LessonConversationPage key={lessonId} lessonId={lessonId} />
   ) : (

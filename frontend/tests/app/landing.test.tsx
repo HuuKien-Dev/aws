@@ -362,20 +362,18 @@ describe('Landing Home', () => {
     expect(screen.getAllByText('ctaRegisterTrialUsed')).toHaveLength(3)
   })
 
-  it('keeps Cloud access distinct from closed registration on the current instance', async () => {
+  it('introduces learning without deployment instructions or external Cloud signup', async () => {
     config.allow_registration = false
     const { container } = render(await Home())
 
-    const modes = screen.getByRole('region', { name: 'modes.title' })
-    expect(within(modes).getByText('modes.accounts')).toBeInTheDocument()
-    expect(screen.queryByText('pricingTitle')).toBeNull()
+    expect(screen.queryByRole('region', { name: 'modes.title' })).toBeNull()
+    expect(container.querySelector('#modalities')).toBeNull()
+    expect(container.querySelector('a[href*="#quick-start"]')).toBeNull()
     expect(
-      within(modes).getByRole('link', { name: 'modes.cloud.cta' })
-    ).toHaveAttribute('href', 'https://freelingo.app/login')
-    expect(
-      within(modes).getByRole('link', { name: 'modes.selfHosted.cta' })
-    ).toHaveAttribute('href', 'https://github.com/artcc/freelingo#quick-start')
+      container.querySelector('a[href="https://freelingo.app/login"]')
+    ).toBeNull()
     expect(container.querySelector('a[href^="/register"]')).toBeNull()
+    expect(container.querySelector('#features')).toBeInTheDocument()
   })
 
   it('replaces both landing CTAs and every pricing signup CTA with Sign in when closed', async () => {
@@ -473,5 +471,18 @@ describe('Landing Home', () => {
         stripeEnabled ? 2 : 0
       )
     }
+  )
+})
+
+it('shows a direct login button alongside signup in the first section', async () => {
+  render(await Home())
+  const hero = screen.getByRole('heading', { level: 1 }).closest('section')!
+  expect(within(hero).getByRole('link', { name: 'signIn' })).toHaveAttribute(
+    'href',
+    '/login'
+  )
+  expect(within(hero).getByRole('link', { name: 'startFree' })).toHaveAttribute(
+    'href',
+    '/register'
   )
 })

@@ -4,6 +4,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { float32ToWav } from '@/lib/audio'
+import { useConfigStore } from '@/store/config'
 
 interface VoiceRecorderProps {
   studyPlanId: number
@@ -40,6 +41,8 @@ export function VoiceRecorder({
   const recordingContextRef = useRef<RecordingContext | null>(null)
   const mountedRef = useRef(true)
   const t = useTranslations('voiceRecorder')
+  const tCommon = useTranslations('common')
+  const sttEnabled = useConfigStore((s) => s.sttEnabled)
   const notifyBusy = useEffectEvent((busy: boolean) => onBusyChange?.(busy))
 
   useEffect(() => {
@@ -255,7 +258,8 @@ export function VoiceRecorder({
   return (
     <button
       onClick={handleClick}
-      disabled={disabled && state === 'idle'}
+      disabled={(!sttEnabled || disabled) && state === 'idle'}
+      title={!sttEnabled ? tCommon('speechUnavailable') : undefined}
       aria-label={state === 'recording' ? t('ariaStop') : t('ariaRecord')}
       className={`border px-3 py-2 font-mono text-xs tracking-widest uppercase transition-colors ${colorClass} ${className}`}
     >

@@ -2,15 +2,7 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { getLocale, getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
-import {
-  ArrowDown,
-  ArrowRight,
-  BookOpen,
-  Cloud,
-  Gamepad2,
-  Mic,
-  Server,
-} from 'lucide-react'
+import { ArrowDown, ArrowRight, BookOpen, Gamepad2, Mic } from 'lucide-react'
 import PricingSection from '@/components/billing/PricingSection'
 import { LandingFAQ } from '@/components/ui/landing-faq'
 import { LandingNav } from '@/components/ui/landing-nav'
@@ -187,6 +179,14 @@ export default async function Home() {
               {startLabel}
               <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
             </Link>
+            {!hasSession && allowRegistration && (
+              <Link
+                href="/login"
+                className="border-fl-accent text-fl-accent hover:bg-fl-surface focus-visible:outline-fl-accent inline-flex items-center justify-center border px-6 py-3 font-sans text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
+              >
+                {t('signIn')}
+              </Link>
+            )}
             <a
               href="#features"
               className="border-fl-border text-fl-muted-1 hover:text-fl-fg hover:border-fl-border-2 focus-visible:outline-fl-accent inline-flex items-center justify-center gap-2 border px-6 py-3 font-sans text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 motion-reduce:transition-none"
@@ -200,15 +200,6 @@ export default async function Home() {
               {t(freemiumTrialEnabled ? 'freeTrialNote' : 'freeNote')}
             </p>
           )}
-          <p className="text-fl-muted-1 mt-4 max-w-xl font-sans text-sm leading-relaxed">
-            {t('modes.intro')}{' '}
-            <a
-              href="#modalities"
-              className="text-fl-accent focus-visible:outline-fl-accent underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
-            >
-              {t('modes.compare')}
-            </a>
-          </p>
         </section>
 
         {/* Learning journey */}
@@ -361,61 +352,6 @@ export default async function Home() {
         <ScrollReveal>
           <LandingReviewsCarousel reviews={reviews} summary={reviewSummary} />
         </ScrollReveal>
-
-        {/* Cloud and self-hosting */}
-        <section
-          id="modalities"
-          aria-labelledby="modalities-title"
-          className="mx-auto w-full max-w-5xl scroll-mt-20 px-6 pb-16"
-        >
-          <h2
-            id="modalities-title"
-            className="text-fl-fg mb-8 font-sans text-2xl font-bold tracking-tight md:text-3xl"
-          >
-            {t('modes.title')}
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {[
-              { key: 'cloud', Icon: Cloud, href: `${SITE_URL}/login` },
-              {
-                key: 'selfHosted',
-                Icon: Server,
-                href: 'https://github.com/artcc/freelingo#quick-start',
-              },
-            ].map(({ key, Icon, href }) => (
-              <article
-                key={key}
-                className="border-fl-border bg-fl-surface flex flex-col border p-6"
-              >
-                <Icon
-                  className="text-fl-accent mb-4 size-5"
-                  aria-hidden="true"
-                />
-                <h3 className="text-fl-fg mb-3 font-sans text-lg font-semibold">
-                  {t(`modes.${key}.title`)}
-                </h3>
-                <p className="text-fl-muted-1 font-sans text-base leading-relaxed">
-                  {t(`modes.${key}.description`)}
-                </p>
-                <ul className="text-fl-muted-1 mt-4 mb-6 list-disc space-y-2 pl-5 font-sans text-sm leading-relaxed">
-                  {['setup', 'access', 'cost'].map((detail) => (
-                    <li key={detail}>{t(`modes.${key}.${detail}`)}</li>
-                  ))}
-                </ul>
-                <a
-                  href={href}
-                  className="text-fl-accent focus-visible:outline-fl-accent mt-auto inline-flex items-center gap-2 self-start font-sans text-sm font-semibold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
-                >
-                  {t(`modes.${key}.cta`)}
-                  <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
-                </a>
-              </article>
-            ))}
-          </div>
-          <p className="text-fl-muted-1 mt-4 max-w-3xl font-sans text-sm leading-relaxed">
-            {t('modes.accounts')}
-          </p>
-        </section>
 
         {/* Pricing */}
         <ScrollReveal>

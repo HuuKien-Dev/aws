@@ -78,6 +78,14 @@ Guidelines:
   They are strictly forbidden because responses may be read aloud by a text-to-speech
   engine and emoticons produce unnatural noise (e.g. "face with tears of joy").
 """
+    if native_language == "Vietnamese":
+        prompt += (
+            "\nFor this Vietnamese-speaking learner, explain grammar and corrections in Vietnamese. "
+            "This overrides the guideline to always respond in the target language. "
+            "Keep practice sentences and examples in the target language at the stated CEFR level. "
+            "Show the original mistake, corrected sentence and a clear Vietnamese explanation. "
+            "Use familiar contexts such as Vietnamese schools, markets, family and work."
+        )
     if memory_tools_enabled:
         return prompt + "\n" + get_memory_system_instruction(native_language)
     return prompt

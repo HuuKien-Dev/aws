@@ -84,68 +84,68 @@ describe('middleware', () => {
       expect(setCookie).toBeNull()
     })
 
-    it('detects locale from Accept-Language header and sets cookie', () => {
+    it('defaults to Vietnamese despite the browser language', () => {
       const req = createRequest('/login', {
         acceptLanguage: 'es-ES,es;q=0.9,en;q=0.8',
       })
       const res = middleware(req)
 
       const setCookie = res.headers.get('set-cookie')
-      expect(setCookie).toContain('NEXT_LOCALE=es')
+      expect(setCookie).toContain('NEXT_LOCALE=vi')
     })
 
-    it('detects Swedish browser language from sv-SE', () => {
+    it('defaults to Vietnamese for a Swedish browser', () => {
       const req = createRequest('/login', {
         acceptLanguage: 'sv-SE,sv;q=0.9,en;q=0.8',
       })
 
       const res = middleware(req)
-      expect(res.headers.get('set-cookie')).toContain('NEXT_LOCALE=sv')
+      expect(res.headers.get('set-cookie')).toContain('NEXT_LOCALE=vi')
     })
 
-    it('detects Danish browser language from da-DK', () => {
+    it('defaults to Vietnamese for a Danish browser', () => {
       const req = createRequest('/login', {
         acceptLanguage: 'da-DK,da;q=0.9,en;q=0.8',
       })
 
       const res = middleware(req)
-      expect(res.headers.get('set-cookie')).toContain('NEXT_LOCALE=da')
+      expect(res.headers.get('set-cookie')).toContain('NEXT_LOCALE=vi')
     })
 
-    it('detects Finnish browser language from fi-FI', () => {
+    it('defaults to Vietnamese for a Finnish browser', () => {
       const req = createRequest('/login', {
         acceptLanguage: 'fi-FI,fi;q=0.9,en;q=0.8',
       })
 
       const res = middleware(req)
-      expect(res.headers.get('set-cookie')).toContain('NEXT_LOCALE=fi')
+      expect(res.headers.get('set-cookie')).toContain('NEXT_LOCALE=vi')
     })
 
-    it('detects Croatian browser language from hr-HR', () => {
+    it('defaults to Vietnamese for a Croatian browser', () => {
       const req = createRequest('/login', {
         acceptLanguage: 'hr-HR,hr;q=0.9,en;q=0.8',
       })
 
       const res = middleware(req)
-      expect(res.headers.get('set-cookie')).toContain('NEXT_LOCALE=hr')
+      expect(res.headers.get('set-cookie')).toContain('NEXT_LOCALE=vi')
     })
 
-    it('falls back to en when no locale detected', () => {
+    it('defaults to Vietnamese without browser preferences', () => {
       const req = createRequest('/login')
       const res = middleware(req)
 
       const setCookie = res.headers.get('set-cookie')
-      expect(setCookie).toContain('NEXT_LOCALE=en')
+      expect(setCookie).toContain('NEXT_LOCALE=vi')
     })
 
-    it('parses complex Accept-Language headers', () => {
+    it('keeps the Vietnamese default with complex language headers', () => {
       const req = createRequest('/login', {
         acceptLanguage: 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
       })
       const res = middleware(req)
 
       const setCookie = res.headers.get('set-cookie')
-      expect(setCookie).toContain('NEXT_LOCALE=fr')
+      expect(setCookie).toContain('NEXT_LOCALE=vi')
     })
 
     it('sets NEXT_LOCALE cookie when not present', () => {
@@ -155,7 +155,7 @@ describe('middleware', () => {
       const res = middleware(req)
 
       const setCookie = res.headers.get('set-cookie')
-      expect(setCookie).toContain('NEXT_LOCALE=es')
+      expect(setCookie).toContain('NEXT_LOCALE=vi')
     })
 
     it('does not overwrite existing NEXT_LOCALE cookie', () => {
@@ -176,7 +176,33 @@ describe('middleware', () => {
       const res = middleware(req)
 
       const setCookie = res.headers.get('set-cookie')
-      expect(setCookie).toContain('NEXT_LOCALE=es')
+      expect(setCookie).toContain('NEXT_LOCALE=vi')
     })
+  })
+})
+
+
+describe('explicit interface language selection', () => {
+  it('replaces an English preference only after an explicit Vietnamese selection', () => {
+    const response = middleware(createRequest('/?ui_locale=vi&lesson=1', {
+      cookies: { NEXT_LOCALE: 'en' },
+    }))
+    expect(response.headers.get('location')).toBe('http://localhost:3000/?lesson=1')
+    expect(response.cookies.get('NEXT_LOCALE')?.value).toBe('vi')
+    expect(response.cookies.get('NEXT_LOCALE')?.secure).toBe(false)
+  })
+
+  it('preserves the authentication guard when selecting a language', () => {
+    const response = middleware(createRequest('/dashboard?ui_locale=vi'))
+    expect(response.headers.get('location')).toBe('http://localhost:3000/login')
+    expect(response.cookies.get('NEXT_LOCALE')?.value).toBe('vi')
+  })
+
+  it('ignores unsupported selections and preserves the saved language', () => {
+    const response = middleware(createRequest('/?ui_locale=unknown', {
+      cookies: { NEXT_LOCALE: 'en' },
+    }))
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-middleware-request-x-next-locale')).toBe('en')
   })
 })

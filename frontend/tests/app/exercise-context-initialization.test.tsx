@@ -93,6 +93,8 @@ beforeEach(() => {
   })
   useAuthStore.setState({ user: null, accessToken: 'token' })
   useConfigStore.setState({
+    ttsEnabled: true,
+    sttEnabled: true,
     loaded: true,
     analyticsEnabled: false,
     stripeEnabled: false,

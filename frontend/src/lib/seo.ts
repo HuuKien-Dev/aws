@@ -8,6 +8,7 @@ export const INDEXABLE_PATHS = ['/', '/privacy', '/terms'] as const
 // Open Graph requires language_TERRITORY; these describe the UI catalogs,
 // independently of the language a user is learning.
 const OPEN_GRAPH_LOCALES: Record<string, string> = {
+  vi: 'vi_VN',
   en: 'en_GB',
   es: 'es_ES',
   fr: 'fr_FR',

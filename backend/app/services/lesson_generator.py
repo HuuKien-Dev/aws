@@ -21,6 +21,7 @@ from app.services.prompts.lesson import (
     build_pronunciation_eval_prompt,
     build_regenerate_exercise_prompt,
 )
+from app.services.rag_service import retrieve_curriculum
 
 LESSON_GENERATION_PROMPT = lesson_prompts.LESSON_GENERATION_PROMPT
 FILL_BLANK_EVAL_PROMPT = lesson_prompts.FILL_BLANK_EVAL_PROMPT
@@ -185,10 +186,13 @@ async def generate_lesson(
         previous_lessons_summary=build_previous_lessons_summary(previous_lessons or []),
     )
 
+    retrieval = await retrieve_curriculum(f"{target_language} {cefr_level} {lesson_type}: {topic}")
     lesson = await llm_adapter.structured_output(
-        [{"role": "system", "content": prompt}],
+        [{"role": "system", "content": prompt}] + retrieval.messages(),
         LessonContent,
     )
+    if retrieval.enabled:
+        lesson.explanation["rag_provenance"] = retrieval.provenance().strip()
     lesson.grammar_refs = [s for s in lesson.grammar_refs if s in valid_slugs]
     # Sanitize fill_blank exercises: question MUST contain ___ (the gapped sentence).
     # If the LLM put the instruction in question and the actual sentence in explanation,

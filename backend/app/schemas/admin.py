@@ -11,6 +11,7 @@ from app.core.config import settings
 # Native-language codes accepted when creating users through the admin API.
 # These match the registration and profile options, not the study-language catalog.
 SUPPORTED_LANGUAGES = {
+    "vi",  # Vietnamese
     "da",  # Danish
     "de",  # German
     "en",  # English

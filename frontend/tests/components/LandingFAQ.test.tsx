@@ -51,10 +51,10 @@ describe('Landing FAQ', () => {
     const document = new DOMParser().parseFromString(html, 'text/html')
     const answer = document.querySelector('[role="region"]')
 
-    expect(answer?.textContent).toContain(messages.landing.faq.modes.answer)
+    expect(answer?.textContent).toContain(messages.landing.faq.languages.answer)
     expect(answer?.hasAttribute('hidden')).toBe(true)
     expect(document.body.textContent).toContain(
-      messages.landing.faq.data.answer
+      messages.landing.faq.start.answer
     )
   })
 
@@ -62,16 +62,16 @@ describe('Landing FAQ', () => {
     render(<FAQ />)
     await waitFor(() => expect(useConfigStore.getState().loaded).toBe(true))
     const modes = screen.getByRole('button', {
-      name: messages.landing.faq.modes.question,
+      name: messages.landing.faq.languages.question,
     })
     const free = screen.getByRole('button', {
-      name: messages.landing.faq.free.question,
+      name: messages.landing.faq.start.question,
     })
 
     expect(screen.queryByRole('region')).toBeNull()
     fireEvent.click(modes)
     const firstAnswer = screen.getByRole('region', {
-      name: messages.landing.faq.modes.question,
+      name: messages.landing.faq.languages.question,
     })
     expect(modes).toHaveAttribute('aria-expanded', 'true')
     expect(modes).toHaveAttribute('aria-controls', firstAnswer.id)
@@ -82,15 +82,15 @@ describe('Landing FAQ', () => {
     expect(firstAnswer).not.toBeVisible()
     expect(free).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('region')).toHaveTextContent(
-      messages.landing.faq.free.answer
+      messages.landing.faq.start.answer
     )
 
     fireEvent.click(free)
     expect(free).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByRole('region')).toBeNull()
-    const events = vi.mocked(fetch).mock.calls.filter(
-      ([url]) => url === '/api/analytics/public'
-    )
+    const events = vi
+      .mocked(fetch)
+      .mock.calls.filter(([url]) => url === '/api/analytics/public')
     expect(events).toHaveLength(2)
     for (const [, options] of events) {
       expect(options).toMatchObject({ method: 'POST', credentials: 'omit' })
@@ -111,12 +111,12 @@ describe('Landing FAQ', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: messages.landing.faq.modes.question,
+        name: messages.landing.faq.languages.question,
       })
     )
 
     expect(screen.getByRole('region')).toHaveTextContent(
-      messages.landing.faq.modes.answer
+      messages.landing.faq.languages.answer
     )
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(fetch).toHaveBeenCalledWith('/api/config')

@@ -1,5 +1,45 @@
 # FreeLingo
 
+## Vietnamese custom edition
+
+This checkout is a local customization of FreeLingo by Arturo Carretero Calvo, distributed under
+the existing AGPL-3.0 license. It adds Vietnamese UI and native-language support, Amazon Bedrock
+inference, and optional retrieval from an existing Amazon Bedrock Knowledge Base. Original author
+credits and legal documents remain in place. It is not the official FreeLingo Cloud service.
+
+For Ubuntu/VMware, build this checkout with `docker-compose.dev.yml`, which builds both applications
+locally and reloads source changes. The main `docker-compose.yml` still references upstream published
+images and does not contain these modifications. See [the Ubuntu instructions](DEVELOPMENT.md#ubuntu-vmware-without-an-nvidia-gpu).
+
+```bash
+export LLM_PROVIDER=bedrock TTS_PROVIDER=disabled STT_PROVIDER=disabled
+docker compose -f docker-compose.dev.yml build backend frontend
+docker compose -f docker-compose.dev.yml up -d
+```
+
+Keep your existing `.env` and `DATA_PATH`. Open `http://localhost:3000` inside Ubuntu. Bedrock chat
+needs your chosen `AWS_REGION`, `BEDROCK_MODEL_ID` (model or inference profile), and an authorized
+AWS SDK credential source. Missing AI configuration produces an error when AI is requested, while
+the application can still start. An empty `BEDROCK_KNOWLEDGE_BASE_ID` disables retrieval and chat
+labels its answer as general model knowledge. No AWS resources are provisioned by the application.
+
+For API-key inference, set `AWS_BEARER_TOKEN_BEDROCK` privately in the backend environment;
+leave it empty for IAM Role/SSO/profile authentication. See the
+[local API-key instructions](DEVELOPMENT.md#bedrock-api-key-for-local-inference).
+Knowledge Base retrieval still requires IAM credentials; the inference key alone does not enable RAG.
+
+Speech is independent of Bedrock. With speech disabled, recording, generated TTS, voice sessions
+and new listening generation are unavailable; existing audio remains accessible. Local NVIDIA
+speech services require an explicit `speech-local` profile. Cloud speech remains supported.
+
+Set `CUSTOM_SOURCE_URL` to the complete corresponding source of the modified version you deploy.
+The footer shows when it has not been configured; the upstream GitHub link is attribution, not a
+claim that the modified source has been supplied. Do not publish the deployment without arranging
+access to its corresponding source as required by the license.
+
+The following sections retain upstream project information. Deployment-specific instructions for
+this custom edition take precedence over the upstream image/Ollama quick start.
+
 ![Hosted](https://img.shields.io/badge/hosted%20service-available-green?style=flat-square)
 ![License](https://img.shields.io/badge/license-AGPL%20v3-blue?style=flat-square)
 ![Next.js](https://img.shields.io/badge/next.js-16-black?style=flat-square)

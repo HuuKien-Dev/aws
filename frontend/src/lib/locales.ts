@@ -3,6 +3,7 @@
 // imported from both the Edge-runtime middleware and server-side code.
 
 export const SUPPORTED_LOCALES = [
+  'vi',
   'en',
   'es',
   'fr',

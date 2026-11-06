@@ -42,6 +42,14 @@ def _get_mail_config() -> ConnectionConfig:
 
 
 _VERIFY_I18N: dict[str, dict[str, str]] = {
+    "vi": {
+        "greeting": "Xin chào {name},",
+        "subject": "Xác minh tài khoản FreeLingo của bạn",
+        "body": "Cảm ơn bạn đã tạo tài khoản FreeLingo.<br />Vui lòng bấm nút bên dưới để xác minh địa chỉ email. Liên kết có hiệu lực trong <strong>24 giờ</strong>.",
+        "button": "Xác minh tài khoản",
+        "link_fallback": "Nếu nút không hoạt động, hãy sao chép liên kết này và dán vào trình duyệt:",
+        "footer": "Nếu không tạo tài khoản này, bạn có thể bỏ qua email.",
+    },
     "en": {
         "greeting": "Hi {name},",
         "subject": "Verify your FreeLingo account",
@@ -165,6 +173,14 @@ _VERIFY_I18N: dict[str, dict[str, str]] = {
 }
 
 _RESET_I18N: dict[str, dict[str, str]] = {
+    "vi": {
+        "greeting": "Xin chào {name},",
+        "subject": "Đặt lại mật khẩu FreeLingo của bạn",
+        "body": "Chúng tôi nhận được yêu cầu đặt lại mật khẩu tài khoản FreeLingo của bạn.<br />Bấm nút bên dưới để tạo mật khẩu mới. Liên kết có hiệu lực trong <strong>1 giờ</strong>.",
+        "button": "Đặt lại mật khẩu",
+        "link_fallback": "Nếu nút không hoạt động, hãy sao chép liên kết này và dán vào trình duyệt:",
+        "footer": "Nếu không yêu cầu đặt lại mật khẩu, bạn có thể bỏ qua email này.",
+    },
     "en": {
         "greeting": "Hi {name},",
         "subject": "Reset your FreeLingo password",
@@ -288,6 +304,16 @@ _RESET_I18N: dict[str, dict[str, str]] = {
 }
 
 _WELCOME_I18N: dict[str, dict[str, str]] = {
+    "vi": {
+        "subject": "Chào mừng bạn đến với FreeLingo!",
+        "greeting": "Xin chào {name},",
+        "body": "Tài khoản của bạn đã sẵn sàng. Hãy bắt đầu như sau:",
+        "step1": "Làm bài <strong>Kiểm tra trình độ</strong> để xác định trình độ hiện tại (A1–C2), điểm mạnh và phần cần luyện thêm.",
+        "step2": "Tạo <strong>Lộ trình học</strong> theo tuần, phù hợp với trình độ và mục tiêu của bạn.",
+        "step3": "Hoàn thành bài học đầu tiên và bắt đầu xây dựng chuỗi ngày học.",
+        "button": "Đến trang tổng quan",
+        "footer": "Chúc bạn học tốt!",
+    },
     "en": {
         "subject": "Welcome to FreeLingo!",
         "greeting": "Hi {name},",
@@ -442,6 +468,12 @@ _WELCOME_I18N: dict[str, dict[str, str]] = {
 
 
 _DELETION_I18N: dict[str, dict[str, str]] = {
+    "vi": {
+        "subject": "Tài khoản FreeLingo của bạn đã được xóa",
+        "greeting": "Xin chào {name},",
+        "body": "Tài khoản FreeLingo của bạn đã được xóa. Toàn bộ dữ liệu của bạn đã được xóa vĩnh viễn khỏi máy chủ của chúng tôi.",
+        "footer": "Nếu không yêu cầu xóa tài khoản, vui lòng liên hệ ngay với chúng tôi.",
+    },
     "en": {
         "subject": "Your FreeLingo account has been deleted",
         "greeting": "Hi {name},",
@@ -535,6 +567,15 @@ _DELETION_I18N: dict[str, dict[str, str]] = {
 }
 
 _CONTACT_I18N: dict[str, dict[str, str]] = {
+    "vi": {
+        "email_title": "Tin nhắn từ biểu mẫu liên hệ",
+        "subject_prefix": "[Liên hệ FreeLingo]",
+        "logo": "FreeLingo: Liên hệ",
+        "from_label": "Người gửi",
+        "subject_label": "Chủ đề",
+        "message_label": "Nội dung",
+        "footer": "Gửi qua biểu mẫu liên hệ FreeLingo",
+    },
     "en": {
         "email_title": "Contact form message",
         "subject_prefix": "[FreeLingo Contact]",
@@ -673,6 +714,19 @@ _CONTACT_I18N: dict[str, dict[str, str]] = {
 }
 
 _FEEDBACK_I18N: dict[str, dict[str, str]] = {
+    "vi": {
+        "email_title": "Có góp ý mới",
+        "logo": "FreeLingo: Góp ý mới",
+        "feature_label": "Đề xuất tính năng",
+        "bug_label": "Báo lỗi",
+        "feature_subject_prefix": "[Đề xuất tính năng]",
+        "bug_subject_prefix": "[Báo lỗi]",
+        "author_label": "Người gửi",
+        "title_label": "Tiêu đề",
+        "description_label": "Mô tả",
+        "cta": "Xem trong trang quản trị",
+        "footer": "Bảng góp ý FreeLingo",
+    },
     "en": {
         "email_title": "New feedback submitted",
         "logo": "FreeLingo: New Feedback",
@@ -871,6 +925,18 @@ _FEEDBACK_I18N: dict[str, dict[str, str]] = {
 }
 
 _REVIEW_I18N: dict[str, dict[str, str]] = {
+    "vi": {
+        "email_title": "Có đánh giá mới",
+        "subject_prefix": "[Đánh giá mới]",
+        "logo": "FreeLingo: Đánh giá mới",
+        "author_label": "Người gửi",
+        "rating_label": "Số sao",
+        "language_label": "Ngôn ngữ đang học",
+        "comment_label": "Bình luận",
+        "empty_comment": "Không có bình luận.",
+        "cta": "Xem trong trang quản trị",
+        "footer": "Kiểm duyệt đánh giá FreeLingo",
+    },
     "en": {
         "email_title": "New review submitted",
         "subject_prefix": "[New Review]",

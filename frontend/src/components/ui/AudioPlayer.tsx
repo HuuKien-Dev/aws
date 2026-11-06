@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth'
 import { getLogger } from '@/lib/logger'
 import { trackBrowserEvent } from '@/lib/analytics'
 import { apiFetch } from '@/lib/api'
+import { useConfigStore } from '@/store/config'
 
 const TTS_TIMEOUT_MS = 15_000
 const ttsLogger = getLogger('tts')
@@ -61,6 +62,9 @@ export function AudioPlayer({
   const recoveryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sessionVersion = useAuthStore((s) => s.sessionVersion)
   const t = useTranslations('audioPlayer')
+  const tCommon = useTranslations('common')
+  const ttsEnabled = useConfigStore((s) => s.ttsEnabled)
+  const speechDisabled = !ttsEnabled && (!audioUrl || audioMethod === 'POST')
 
   // Resolve voice: explicit prop > user localStorage preference > backend default
   const resolvedVoice = voice ?? storedVoice()
@@ -268,7 +272,14 @@ export function AudioPlayer({
     <button
       type="button"
       onClick={handleClick}
-      title={state === 'playing' ? t('stop') : (listenLabel ?? t('listen'))}
+      disabled={speechDisabled}
+      title={
+        speechDisabled
+          ? tCommon('speechUnavailable')
+          : state === 'playing'
+            ? t('stop')
+            : (listenLabel ?? t('listen'))
+      }
       aria-label={
         state === 'playing' ? t('ariaStop') : (listenLabel ?? t('ariaListen'))
       }

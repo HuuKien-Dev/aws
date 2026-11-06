@@ -19,6 +19,7 @@ def validate_password_strength(v: str) -> str:
 from pydantic import BaseModel, EmailStr, Field, field_serializer, field_validator
 
 SUPPORTED_LANGUAGES = {
+    "vi",
     "en",
     "es",
     "fr",
@@ -61,6 +62,7 @@ def get_available_languages() -> list[str]:
 
 
 SUPPORTED_UI_LOCALES: set[str] = {
+    "vi",
     "en",
     "es",
     "fr",

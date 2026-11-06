@@ -47,6 +47,7 @@ from app.services.memory_service import (
 from app.services.progress_rewards import reward_conversation
 from app.services.prompts.common import get_language_prompt_overlay
 from app.services.prompts.tutor import build_tutor_system_prompt
+from app.services.rag_service import retrieve_curriculum
 from app.utils.db import db_session
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -410,12 +411,16 @@ async def chat(
                         study_plan_id=study_plan_id,
                     )
 
+            retrieval = await retrieve_curriculum(
+                f"{target_language} {cefr_level}: {messages[-1]['content']}"
+            )
+            rag_messages = retrieval.messages()
             stream = await llm_adapter.chat(
-                messages,
+                messages[:1] + rag_messages + messages[1:],
                 stream=True,
                 tools=[build_save_user_memory_tool(native_language_name)],
                 tool_executor=execute_memory_tool,
-                fallback_messages=fallback_messages,
+                fallback_messages=fallback_messages[:1] + rag_messages + fallback_messages[1:],
             )
             async for chunk in stream:
                 if isinstance(chunk, LLMToolResultEvent):
@@ -442,6 +447,11 @@ async def chat(
             )
             if memory_updated and not memory_updated_sent:
                 yield f"data: {json.dumps({'memory_updated': True})}\n\n"
+
+            provenance = retrieval.provenance()
+            if provenance:
+                full_response += provenance
+                yield f"data: {json.dumps({'token': provenance})}\n\n"
 
             completed_at = datetime.now(UTC).replace(tzinfo=None)
             assistant_message = ChatHistory(
@@ -480,17 +490,17 @@ async def chat(
                 current_user.id,
                 conversation_id,
             )
-            yield f"data: {json.dumps({'error': 'The AI model took too long. Please try again.'})}\n\n"
+            yield f"data: {json.dumps({'error': 'AI phản hồi quá chậm. Vui lòng thử lại.'})}\n\n"
         except LLMUnavailableError:
             logger.error("LLM unavailable for user %s", current_user.id)
-            yield f"data: {json.dumps({'error': 'The AI service is currently unavailable.'})}\n\n"
+            yield f"data: {json.dumps({'error': 'Dịch vụ AI đang bận hoặc không khả dụng. Vui lòng thử lại sau.'})}\n\n"
         except LLMError:
             logger.exception(
                 "LLM error for user %s conversation %s",
                 current_user.id,
                 conversation_id,
             )
-            yield f"data: {json.dumps({'error': 'Something went wrong. Please try again.'})}\n\n"
+            yield f"data: {json.dumps({'error': 'Không thể trả lời. Vui lòng kiểm tra cấu hình AI/RAG, quyền AWS và khả năng tool calling của model.'})}\n\n"
         finally:
             if isinstance(stream, LLMStream) and (
                 stream.prompt_tokens is not None or stream.completion_tokens is not None

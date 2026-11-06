@@ -1,0 +1,17 @@
+# The root build context is used only by the frontend Dockerfiles.
+**
+!frontend/
+!frontend/**
+!messages/
+!messages/**
+!LICENSE
+
+frontend/node_modules
+frontend/.next
+frontend/.turbo
+frontend/coverage
+frontend/*.tsbuildinfo
+**/.env
+**/.env.*
+**/.aws
+**/__pycache__

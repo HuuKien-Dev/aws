@@ -18,8 +18,10 @@ applyTo: "docker-compose*.yml, .env.example, .env.dev, backend/Dockerfile, front
 - `kokoro`: local TTS GPU image, required only when `TTS_PROVIDER=local`.
 - `whisper`: local STT GPU image, required only when `STT_PROVIDER=local`.
 
-Ollama is not a Compose service. The default configuration expects it on the host through
+Ollama is not a Compose service. It is an optional provider configured through
 `host.docker.internal:11434`. The backend service declares the Linux host-gateway mapping.
+The custom `.env.example` selects Bedrock with an explicit region/model and disabled speech.
+The production Compose file still uses upstream images; use development Compose to run this checkout.
 
 ## Development topology
 
@@ -32,9 +34,11 @@ connections use `NEXT_PUBLIC_API_URL=http://localhost:8000`, producing
 `ws://localhost:8000/ws/conversation`. Next.js HTTP rewrites do not forward this WebSocket route.
 `.env.dev` supplies localhost application and billing return URLs for this topology.
 
-It does not define Kokoro or Whisper. Development must therefore select external/cloud speech
-providers or compose the missing local services separately. Its default local speech hostnames are not
-services contained in that file.
+Development extends the Kokoro and Whisper definitions from production Compose under the optional
+`speech-local` profile. Neither service starts in the CPU-only path. `TTS_PROVIDER=disabled` and
+`STT_PROVIDER=disabled` select no adapter. An existing `.env` can override defaults: explicitly export
+these values when starting a CPU-only installation. Data paths and service/container names remain
+the same, allowing the existing PostgreSQL/Redis mounts to be reused without deleting data.
 
 `frontend/Dockerfile.dev` is used only by development Compose. Publishing workflows use the production
 backend and frontend Dockerfiles.
@@ -46,7 +50,13 @@ Frontend production/development images use Node 26.13.0 LTS, explicitly install 
 committed lockfile through `npm ci`. These exact runtime and package-manager versions match the local
 toolchain and PR CI. Production uses Next.js standalone output.
 
-The frontend builder places the frontend in `/app` and copies translation catalogs to `/app/messages`.
+Frontend containers place application source in `/app/frontend` and catalogs in `/app/messages`.
+The shared `/app` root matches the monorepo layout used by Turbopack and output-file tracing.
+Production copies standalone output to `/app` and runs `server.js` from `/app/frontend`, preserving
+the generated relative path. Development mounts source/catalogs at those same paths with a separate
+node_modules volume. Root `.dockerignore` limits the frontend build context to source, catalogs and
+the license, excluding local dependencies, build output and secret configuration. Backend context
+has its own `.dockerignore`; persistent user files and local environment files are not copied.
 Next.js checks types with `frontend/tsconfig.build.json`, which excludes `tests/`; test imports resolve
 against the monorepo layout and are checked by the full `tsconfig.json` in PR CI.
 
@@ -127,9 +137,18 @@ data-dependent upgrades of existing deployments. See `testing.instructions.md`.
 
 ## GPU and provider selection
 
-Production Compose declares NVIDIA reservations for Kokoro and Whisper. CPU-only operation requires
-an appropriate upstream CPU image and removal of the GPU reservation; exact upstream tags are not a
-stable FreeLingo contract.
+Both Compose topologies reserve NVIDIA GPUs only for explicitly selected `speech-local` services.
+CPU-only web operation leaves that profile disabled and disables speech, or uses configured cloud
+speech. Selecting local speech on a CPU-only host requires an appropriate upstream CPU image and
+removing GPU reservations; exact upstream CPU tags are not a stable FreeLingo contract.
+
+Both files forward `AWS_REGION`, `BEDROCK_MODEL_ID`, `BEDROCK_MAX_TOKENS`,
+`BEDROCK_TIMEOUT_SECONDS`, `BEDROCK_KNOWLEDGE_BASE_ID`, `BEDROCK_RAG_RESULTS`,
+`BEDROCK_RAG_MIN_SCORE` and `CUSTOM_SOURCE_URL` to the backend only. No AWS secrets are built into
+frontend images. `docker-compose.aws-local.yml` explicitly mounts a securely provisioned shared
+AWS configuration directory read-only and selects `AWS_PROFILE`. EC2 deployments should use their
+instance IAM role without that override. AWS resources are configured separately, never provisioned
+by Compose. Maintainer build/start/log commands are in `DEVELOPMENT.md`.
 
 When TTS or STT uses OpenAI, the corresponding local speech service is unnecessary. LLM, TTS, STT,
 recognition-language, and provider HTTP contracts belong to `services.instructions.md` and
@@ -150,3 +169,19 @@ recognition-language, and provider HTTP contracts belong to `services.instructio
 - `speech-services.instructions.md`: provider contracts.
 - `subscriptions-freemium.instructions.md`: billing/access configuration.
 - `testing.instructions.md`: CI and local validation workflows.
+
+## Bedrock API-key authentication
+
+Model inference also accepts `AWS_BEARER_TOKEN_BEDROCK` through the AWS SDK's native environment
+support. Compose forwards the optional token only to the backend; it is not a frontend setting,
+public-config field or model ID. The SDK selects bearer-token inference for a nonempty value;
+an empty value retains the standard IAM Role/SSO/profile chain. No additional SDK dependency,
+manual Authorization header or global environment mutation is required. The key must be valid,
+unexpired, authorized for the model and scoped to the configured region. Tokens are replaced
+outside the application and are never logged or returned. Provider authentication failures stay
+sanitized and do not silently switch authentication modes.
+
+Bedrock API keys do not authorize Knowledge Base `Retrieve`. Its `bedrock-agent-runtime` client
+explicitly uses SigV4 and still needs IAM credentials with `bedrock:Retrieve`. Inference can use a
+key alongside separate IAM credentials for retrieval. An inference-only configuration leaves the
+KB ID empty. TTS and STT remain independently configured.

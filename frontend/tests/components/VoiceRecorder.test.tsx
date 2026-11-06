@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import React from 'react'
 import { VoiceRecorder as VoiceRecorderComponent } from '@/components/ui/VoiceRecorder'
+import { useConfigStore } from '@/store/config'
 
 const TEST_STUDY_PLAN_ID = 42
 
@@ -47,6 +48,12 @@ vi.mock('next/image', () => ({
 }))
 
 describe('VoiceRecorder', () => {
+  it('disables recording when recognition is not configured', () => {
+    useConfigStore.setState({ sttEnabled: false })
+    render(<VoiceRecorder onTranscription={vi.fn()} />)
+    expect(screen.getByRole('button')).toBeDisabled()
+    expect(screen.getByRole('button')).toHaveAttribute('title', 'speechUnavailable')
+  })
   let mockGetUserMedia: ReturnType<typeof vi.fn>
   let streamTrackStop: ReturnType<typeof vi.fn>
 
@@ -65,6 +72,7 @@ describe('VoiceRecorder', () => {
   let mockStartRendering: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
+    useConfigStore.setState({ sttEnabled: true })
     vi.clearAllMocks()
 
     streamTrackStop = vi.fn()

@@ -18,6 +18,9 @@ interface ConfigStore {
   stripeTrialDays: number
   freemiumTrialEnabled: boolean
   ttsProvider: string
+  ttsEnabled: boolean
+  sttEnabled: boolean
+  customSourceUrl: string
   openaiTtsVoice: string
   maintenanceMode: boolean
   priceMonthly: number
@@ -36,6 +39,9 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   stripeTrialDays: 7,
   freemiumTrialEnabled: true,
   ttsProvider: 'local',
+  ttsEnabled: false,
+  sttEnabled: false,
+  customSourceUrl: '',
   openaiTtsVoice: 'nova',
   maintenanceMode: false,
   priceMonthly: 0.0,
@@ -57,6 +63,9 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
         stripeTrialDays: data.stripe_trial_days ?? 7,
         freemiumTrialEnabled: data.freemium_trial_enabled ?? true,
         ttsProvider: data.tts_provider ?? 'local',
+        ttsEnabled: data.tts_enabled === true,
+        sttEnabled: data.stt_enabled === true,
+        customSourceUrl: data.custom_source_url ?? '',
         openaiTtsVoice: data.openai_tts_voice ?? 'nova',
         maintenanceMode: data.maintenance_mode ?? false,
         priceMonthly: data.price_monthly ?? 0.0,

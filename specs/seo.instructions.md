@@ -19,8 +19,11 @@ Umami measurements.
 - Legal route-specific `layout.tsx` files own privacy and terms metadata. The existing client pages
   retain their navigation and registration-context behavior.
 - Account route-specific layouts supply translated titles without altering account forms.
-- `messages/*.json` owns translated metadata in the fifteen interface languages. SEO descriptions
+- `messages/*.json` owns translated metadata in the sixteen interface languages. SEO descriptions
   are separate from visible page copy.
+- The custom edition additionally supports Vietnamese metadata and document language (`vi`), with
+  Open Graph locale `vi_VN`. New visitors use Vietnamese; existing interface-cookie choices remain.
+  The added attribution/source footer does not claim that upstream hosts the modified source.
 - `frontend/src/app/sitemap.ts` and `robots.ts` publish `/sitemap.xml` and `/robots.txt`.
 
 ## Indexing policy and route inventory
@@ -74,7 +77,7 @@ Each indexable page emits:
 - The existing `/og-image-v2.png` social image, 1200 × 630, with a brand alternative description.
 
 Landing metadata describes structured A1–C2 learning, personalized plans, exercises, games, and
-conversation with Lingu. It must not promise guaranteed outcomes or features that are unavailable.
+conversation with Ligo. It must not promise guaranteed outcomes or features that are unavailable.
 Meta keywords are not used.
 
 Canonical URLs omit all query strings and fragments. For example, `/privacy?from=landing` and
@@ -103,7 +106,7 @@ examples retain `TargetLanguageText` and their own `lang` attributes.
 All interface variants of a page share a single canonical URL. There are no `hreflang`,
 `x-default`, or Open Graph alternate-locale claims. Cookie-selected variants are not separately
 addressable language pages. Googlebot normally omits `Accept-Language`, so the default English
-response is important; translating metadata does not make all fifteen variants independently
+response is important; translating metadata does not make all sixteen variants independently
 indexable.
 
 Independent international indexing requires a separately approved architecture with stable localized
@@ -160,7 +163,7 @@ It is not an additional route in the application's sitemap.
 
 Geist Sans and Geist Mono retain their existing Next.js font handling. Noto Sans JP/KR/SC remain
 available with the existing typography rules, without global preloads of their Latin subsets.
-Three.js and Lingu's scene remain dynamically imported with the existing reduced-motion, visibility,
+Three.js and Ligo's scene remain dynamically imported with the existing reduced-motion, visibility,
 and cleanup behavior. No analytics dependency is needed for SEO.
 
 Performance work should use measured evidence:
@@ -201,7 +204,7 @@ The deployment maintainer must complete production build and deployed checks:
    not-found response. `/reading` is included in the middleware's preliminary protected-route list;
    the authenticated shell and backend remain responsible for validating the session and access.
 7. Compare responsive light/dark landing presentation and existing registration, invitation,
-   legal-return, pricing, FAQ, and Lingu flows. Retain existing behavior when optimizing SEO.
+   legal-return, pricing, FAQ, and Ligo flows. Retain existing behavior when optimizing SEO.
 
 ## Google Search Console operating guide
 

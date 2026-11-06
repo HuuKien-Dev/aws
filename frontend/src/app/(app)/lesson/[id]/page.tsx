@@ -628,6 +628,14 @@ export default function LessonPage() {
             </p>
             {explanation && (
               <div className="mt-4 max-w-[70ch] space-y-3">
+                {typeof explanation.rag_provenance === 'string' && (
+                  <p
+                    className="text-fl-muted-2 text-sm whitespace-pre-line"
+                    lang="vi"
+                  >
+                    {explanation.rag_provenance}
+                  </p>
+                )}
                 {explanation.text != null && (
                   <TargetLanguageText
                     as="p"

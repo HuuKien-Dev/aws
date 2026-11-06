@@ -10,24 +10,9 @@ import { apiFetch } from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
 import { useConfigStore } from '@/store/config'
 import { PageLoading } from '@/components/ui/page-loading'
+import { SUPPORTED_LOCALES } from '@/lib/locales'
 
-const LANGUAGES = [
-  'en',
-  'es',
-  'fr',
-  'pt',
-  'de',
-  'it',
-  'pl',
-  'nl',
-  'ro',
-  'ru',
-  'tr',
-  'sv',
-  'da',
-  'fi',
-  'hr',
-] as const
+const LANGUAGES = SUPPORTED_LOCALES
 
 type SelectedPlan = 'monthly' | 'yearly'
 
@@ -52,7 +37,7 @@ function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [displayName, setDisplayName] = useState('')
-  const [nativeLanguage, setNativeLanguage] = useState('es')
+  const [nativeLanguage, setNativeLanguage] = useState('vi')
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

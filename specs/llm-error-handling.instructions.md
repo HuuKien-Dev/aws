@@ -27,6 +27,18 @@ currently retries any `LLMError`, not only transient subclasses. Anthropic disab
 explicitly; OpenAI Responses and the Chat Completions clients do not, so three adapter invocations
 do not guarantee only three network requests.
 
+Bedrock disables SDK retries (`total_max_attempts=1`), so request creation has at most three adapter
+attempts. SDK connect/read timeouts map to `LLMTimeoutError`; throttling, unavailable service and
+model-not-ready errors map to `LLMUnavailableError`. Other failures are sanitized `LLMError` values
+without provider payloads, credentials or prompts. Invalid/missing model configuration and unsupported
+streaming tools remain visible errors; Bedrock never silently drops tools or switches providers.
+Non-streamed truncation, incomplete streams and non-success stop reasons are response errors.
+Failures after stream iteration begins do not replay the response.
+
+Knowledge Base retrieval retries only transient unavailability, at most three attempts. An empty or
+below-threshold retrieval is distinguished from missing configuration and AWS errors. Text chat shows
+clear Vietnamese failure messages; no AWS failure is converted into a fabricated grounded answer.
+
 The default request timeout is 120 seconds per network attempt, not an end-to-end generation limit.
 OpenAI SDK `APITimeoutError` and Python `TimeoutError` normalize to `LLMTimeoutError`. Do not document
 malformed output or context overflow as non-retryable while the default implementation catches the
@@ -69,7 +81,7 @@ results cannot overwrite terminal state.
 
 ## Context size
 
-The adapter declares context constants and `LLMContextOverflowError` but does not currently estimate
+The adapter declares `LLMContextOverflowError` but does not currently estimate
 tokens, trim messages, enforce model windows, or raise that subtype. Context windows vary by selected
 model and must not be documented as fixed provider-wide values.
 
@@ -140,3 +152,24 @@ model-name reasoning exceptions. These differences remain internal to the adapte
 - Treat failures before visible stream output differently from failures after partial output.
 - Keep error messages provider-neutral unless operator action is genuinely provider-specific.
 - Update endpoint/domain specs when an observable status or stream event changes.
+
+Flashcard generation returns HTTP 503 with `ai_not_configured` when Bedrock is selected without
+a region or model. This check runs after authentication and active-plan ownership resolution and
+before inference or card writes. The flashcard UI distinguishes missing configuration, timeouts,
+unavailability and generation failures with localized messages; it never substitutes sample cards.
+
+## Bedrock API-key authentication
+
+Model inference also accepts `AWS_BEARER_TOKEN_BEDROCK` through the AWS SDK's native environment
+support. Compose forwards the optional token only to the backend; it is not a frontend setting,
+public-config field or model ID. The SDK selects bearer-token inference for a nonempty value;
+an empty value retains the standard IAM Role/SSO/profile chain. No additional SDK dependency,
+manual Authorization header or global environment mutation is required. The key must be valid,
+unexpired, authorized for the model and scoped to the configured region. Tokens are replaced
+outside the application and are never logged or returned. Provider authentication failures stay
+sanitized and do not silently switch authentication modes.
+
+Bedrock API keys do not authorize Knowledge Base `Retrieve`. Its `bedrock-agent-runtime` client
+explicitly uses SigV4 and still needs IAM credentials with `bedrock:Retrieve`. Inference can use a
+key alongside separate IAM credentials for retrieval. An inference-only configuration leaves the
+KB ID empty. TTS and STT remain independently configured.

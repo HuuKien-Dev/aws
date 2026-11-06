@@ -20,7 +20,7 @@ STRUCTURED_OUTPUT_RETRY_PROMPT = (
 )
 
 ANTHROPIC_SYSTEM_ONLY_TRIGGER = "Generate the content as specified."
-TUTOR_DISPLAY_NAME = "Lingu"
+TUTOR_DISPLAY_NAME = "Ligo"
 
 _LANGUAGE_PROMPT_OVERLAYS: dict[str, str] = {
     "en-US": """

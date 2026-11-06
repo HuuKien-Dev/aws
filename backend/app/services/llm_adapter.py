@@ -25,13 +25,6 @@ MAX_RETRIES = 2
 RETRY_DELAY_SECONDS = 2
 REQUEST_TIMEOUT = 120.0
 
-MAX_CONTEXT_TOKENS = {
-    "openai": 128000,
-    "anthropic": 200000,
-    "deepseek": 128000,
-    "ollama": 8192,
-}
-
 
 class LLMError(Exception):
     pass
@@ -312,6 +305,7 @@ class LLMToolStream(LLMStream):
         fallback_messages: list[dict],
         tool_executor: ToolExecutor,
         *,
+        tools: list[LLMTool] | None = None,
         using_fallback: bool = False,
         tools_unsupported: bool = False,
     ) -> None:
@@ -320,6 +314,7 @@ class LLMToolStream(LLMStream):
         self._messages = messages
         self._fallback_messages = fallback_messages
         self._tool_executor = tool_executor
+        self._tools = tools
         self._using_fallback = using_fallback
         self.tool_calls: list[LLMToolCall] = []
         self.tool_results: list[LLMToolResult] = []
@@ -416,6 +411,10 @@ class LLMToolStream(LLMStream):
                 if text:
                     yield text
                 if not collect_calls:
+                    if self._adapter.provider == "bedrock" and getattr(
+                        delta, "tool_calls", None
+                    ):
+                        raise LLMResponseError("Bedrock requested an additional tool round")
                     continue
                 tool_deltas = getattr(delta, "tool_calls", None)
                 if not isinstance(tool_deltas, (list, tuple)):
@@ -485,6 +484,8 @@ class LLMToolStream(LLMStream):
                     visible_text_emitted = True
                     yield text
         except LLMToolsUnsupportedError as exc:
+            if self._adapter.provider == "bedrock":
+                raise
             self.tools_unsupported = True
             if visible_text_emitted:
                 logger.info(
@@ -514,6 +515,8 @@ class LLMToolStream(LLMStream):
                     yield text
             return
         except LLMError as exc:
+            if self._adapter.provider == "bedrock":
+                raise
             if visible_text_emitted:
                 logger.warning(
                     "%s tool-enabled stream failed after visible text was emitted; "
@@ -580,7 +583,7 @@ class LLMToolStream(LLMStream):
                 self._adapter._do_chat,
                 continuation_messages,
                 True,
-                None,
+                self._tools if self._adapter.provider == "bedrock" else None,
             )
             async with aclosing(
                 self._provider_text_and_calls(continuation, collect_calls=False)
@@ -589,6 +592,8 @@ class LLMToolStream(LLMStream):
                     visible_text_emitted = True
                     yield text
         except LLMError as exc:
+            if self._adapter.provider == "bedrock":
+                raise
             if visible_text_emitted:
                 logger.info(
                     "Native tool continuation failed for provider=%s model=%s after visible "
@@ -621,7 +626,13 @@ class LLMAdapter:
     def __init__(self):
         self.provider = settings.LLM_PROVIDER
         self._native_tools_available_logged = False
-        if self.provider == "ollama":
+        if self.provider == "bedrock":
+            from app.services.bedrock_service import BedrockTransport
+
+            self._bedrock = BedrockTransport()
+            self.client = None
+            self.model = settings.BEDROCK_MODEL_ID
+        elif self.provider == "ollama":
             self.client = AsyncOpenAI(
                 base_url=f"{settings.OLLAMA_BASE_URL}/v1",
                 api_key="ollama",
@@ -645,6 +656,8 @@ class LLMAdapter:
             )
             self.client = None
             self.model = settings.ANTHROPIC_MODEL
+        else:
+            raise ValueError("Unsupported LLM_PROVIDER")
 
     async def _call_with_retry(
         self, fn, *args, tools_requested: bool = False, max_retries: int = MAX_RETRIES, **kwargs
@@ -705,6 +718,8 @@ class LLMAdapter:
                 tools_requested=bool(tools),
             )
         except LLMToolsUnsupportedError as exc:
+            if self.provider == "bedrock":
+                raise
             logger.info(
                 "Native tools unavailable for provider=%s model=%s; continuing without them: %s",
                 self.provider,
@@ -720,7 +735,7 @@ class LLMAdapter:
             tools_unsupported = True
             using_fallback = True
         except LLMError as exc:
-            if not tools:
+            if not tools or self.provider == "bedrock":
                 raise
             logger.info(
                 "Native tool request failed for provider=%s model=%s; "
@@ -745,6 +760,7 @@ class LLMAdapter:
                 messages,
                 messages_without_tools,
                 tool_executor,
+                tools=tools,
                 using_fallback=using_fallback,
                 tools_unsupported=tools_unsupported,
             )
@@ -763,6 +779,8 @@ class LLMAdapter:
         request_timeout: float = REQUEST_TIMEOUT,
         sdk_max_retries: int | None = None,
     ):
+        if self.provider == "bedrock":
+            return await self._bedrock.chat(messages, stream, tools, request_timeout)
         if self.provider == "anthropic":
             if request_timeout != REQUEST_TIMEOUT:
                 return await self._anthropic_chat(

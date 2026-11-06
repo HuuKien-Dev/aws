@@ -1,0 +1,12 @@
+# Explicit opt-in for local shared AWS configuration / SSO cache.
+# On EC2 use the instance IAM role instead of this override.
+services:
+  backend:
+    volumes:
+      - ${AWS_CONFIG_DIRECTORY:?Set AWS_CONFIG_DIRECTORY to your AWS configuration directory}:/aws-home/.aws:ro
+    environment:
+      AWS_PROFILE: ${AWS_PROFILE:-default}
+      AWS_CONFIG_FILE: /aws-home/.aws/config
+      AWS_SHARED_CREDENTIALS_FILE: /aws-home/.aws/credentials
+      AWS_SDK_LOAD_CONFIG: "1"
+      HOME: /aws-home
